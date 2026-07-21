@@ -42,14 +42,23 @@ FetchContent_Declare(
     DOWNLOAD_NO_EXTRACT TRUE
 )
 
-FetchContent_MakeAvailable(glfw glm stb_image tinyobjloader)
-
 # vulkan
 find_package(Vulkan REQUIRED)
 
-add_executable(${PROJECT_NAME}
-  main.cpp
+# volk (needs to be after vulkan)
+FetchContent_Declare(
+    volk
+    GIT_REPOSITORY https://github.com/zeux/volk.git
+    GIT_TAG 1.4.350
+    GIT_SHALLOW TRUE
 )
+
+FetchContent_MakeAvailable(glfw glm stb_image tinyobjloader volk)
+
+add_executable(${PROJECT_NAME}
+  src/main.cpp
+  src/Renderer/VulkanContext.cpp
+  "defines/volk_implementation.cpp" "src/Core/Window.h" "src/Core/Window.cpp")
 
 target_include_directories(${PROJECT_NAME} PRIVATE
   ${stb_image_SOURCE_DIR}
@@ -59,5 +68,5 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 target_link_libraries(${PROJECT_NAME} PRIVATE
     glfw
     glm::glm
-    Vulkan::Vulkan
+    volk
 )
