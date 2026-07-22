@@ -7,7 +7,7 @@
 namespace VulkanContext {
 
 	bool Init() {
-		if (!volkInitialize()) {
+		if (volkInitialize() != VK_SUCCESS) {
             std::cerr << "[ERROR::VKCONTEXT] failed to initialize volk\n";
 			return false;
 		}

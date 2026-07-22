@@ -13,14 +13,10 @@ namespace VkInstanceManager {
     VkDebugUtilsMessengerEXT g_debugMessenger = VK_NULL_HANDLE;
     VkSurfaceKHR g_surface = VK_NULL_HANDLE;
     
-    #ifndef DEBUG
-        bool g_validationEnabled = true;
-    #else
-        bool g_validationEnabled = false;
-    #endif
-    
+    bool g_validationEnabled = true;
+
     static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageTypes, const VkDebugUtilsMessengerCallbackDataEXT* callbackData, void* userData) {
-        std::cerr << "[VALIDATION LAYER]" << callbackData->pMessage << '\n';
+        std::cerr << "[VALIDATION LAYER] " << callbackData->pMessage << '\n';
         return VK_FALSE;
     }
 
@@ -34,8 +30,11 @@ namespace VkInstanceManager {
             glfwExtensions + glfwExtensionCount
         );
         
-        if (g_validationEnabled) { extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME); }
-        #ifndef __APPLE__
+        if (g_validationEnabled) { 
+            extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+        }
+
+        #ifdef __APPLE__
             extensions.push_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
         #endif
 
@@ -49,14 +48,14 @@ namespace VkInstanceManager {
             bool found = false;
             for (const auto& layer : availableLayers) {
                 if (strcmp(layer.layerName, "VK_LAYER_KHRONOS_validation") == 0) {
-                    layers.push_back(layer.layerName);
+                    layers.push_back("VK_LAYER_KHRONOS_validation");
                     found = true;
                     break;
                 }
             }
             
             if (!found) {
-                std::cerr << "[ERROR::VK_CONTEXT] validation layers requested but none found\n";
+                std::cerr << "[ERROR::INSTANCE_MANAGER] validation layers requested but none found\n";
                 g_validationEnabled = false;
             }
         }
@@ -84,14 +83,16 @@ namespace VkInstanceManager {
 			.pApplicationInfo = &appInfo,
             .enabledLayerCount = static_cast<uint32_t>(layers.size()),
             .ppEnabledLayerNames = layers.data(),
-			.enabledExtensionCount = glfwExtensionCount + 1,
+			.enabledExtensionCount = static_cast<uint32_t>(extensions.size()),
 			.ppEnabledExtensionNames = extensions.data(),
 		};
-        #ifndef __APPLE__
+        #ifdef __APPLE__
             instanceCreateInfo.flags = VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
         #endif
-        
-        if (vkCreateInstance(&instanceCreateInfo, nullptr, &g_instance) != VK_SUCCESS) {
+
+        VkResult result = vkCreateInstance(&instanceCreateInfo, nullptr, &g_instance);
+        if (result != VK_SUCCESS) {
+            std::cerr << "[ERROR::INSTANCE_MANAGER] failed to create instance: " << result << '\n';
             return false;
         }
 
