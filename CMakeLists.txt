@@ -44,6 +44,11 @@ FetchContent_Declare(
 
 # vulkan
 find_package(Vulkan REQUIRED)
+# Prevent CMake from stripping the Vulkan include path from compile_commands.json.
+# Clangd doesn't search implicit compiler paths, so it needs the explicit -I flag.
+if(Vulkan_INCLUDE_DIRS)
+  list(REMOVE_ITEM CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES "${Vulkan_INCLUDE_DIRS}")
+endif()
 
 # volk (needs to be after vulkan)
 FetchContent_Declare(
@@ -58,7 +63,9 @@ FetchContent_MakeAvailable(glfw glm stb_image tinyobjloader volk)
 add_executable(${PROJECT_NAME}
   src/main.cpp
   src/Renderer/VulkanContext.cpp
-  "defines/volk_implementation.cpp" "src/Core/Window.h" "src/Core/Window.cpp")
+  src/Core/Window.cpp
+  defines/volk_implementation.cpp
+)
 
 target_include_directories(${PROJECT_NAME} PRIVATE
   ${stb_image_SOURCE_DIR}

@@ -1,7 +1,7 @@
 #include "Window.h"
-#include <glfw/glfw3.h>
+#include <GLFW/glfw3.h>
 #include <cstdint>
-#include <iostream>
+#include <stdexcept>
 
 namespace Window {
 
@@ -11,15 +11,15 @@ namespace Window {
 
 	void Init(uint32_t width, uint32_t height, const char* title) {
 		if (!glfwInit()) {
-			std::cout << "[ERROR::WINDOW] failed to initialize glfw" << std::endl;
-			return;
+			throw std::runtime_error("[ERROR::WINDOW] failed to initialize glfw");
+            return;
 		}
 
 		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
 		g_handle = glfwCreateWindow(width, height, title, nullptr, nullptr);
 		if (!g_handle) {
-			std::cout << "[ERROR::WINDOW] failed to create window" << std::endl;
+			throw std::runtime_error("[ERROR::WINDOW] failed to create window");
 			return;
 		}
 
@@ -40,6 +40,12 @@ namespace Window {
 	void Shutdown() {
 		glfwTerminate();
 	}
+    
+    GLFWwindow* GetWindowPointer() { return g_handle; }
+    
+    uint32_t GetHeight() { return g_height; }
+
+    uint32_t GetWidth() { return g_width; }
 
 	const char** GetInstanceExtensions(uint32_t* extensionCount) {
 		return glfwGetRequiredInstanceExtensions(extensionCount);
