@@ -2,6 +2,7 @@
 #include <GLFW/glfw3.h>
 #include <cstdint>
 #include <stdexcept>
+#include <iostream>
 
 namespace Window {
 
@@ -9,24 +10,26 @@ namespace Window {
 	uint32_t g_height = 0;
 	uint32_t g_width = 0;
 
-	void Init(uint32_t width, uint32_t height, const char* title) {
+	bool Init(uint32_t width, uint32_t height, const char* title) {
 		if (!glfwInit()) {
-			throw std::runtime_error("[ERROR::WINDOW] failed to initialize glfw");
-            return;
+            std::cerr << "[ERROR::WINDOW] failed to initialize glfw\n";
+            return false;
 		}
 
 		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
 		g_handle = glfwCreateWindow(width, height, title, nullptr, nullptr);
 		if (!g_handle) {
-			throw std::runtime_error("[ERROR::WINDOW] failed to create window");
-			return;
+            std::cerr << "[ERROR::WINDOW] failed to create window\n";
+			return false;
 		}
 
 		glfwSetInputMode(g_handle, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
 		g_height = height;
 		g_width = width;
+        
+        return true;
 	}
 	
 	void BeginFrame() {

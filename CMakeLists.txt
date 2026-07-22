@@ -62,9 +62,10 @@ FetchContent_MakeAvailable(glfw glm stb_image tinyobjloader volk)
 
 add_executable(${PROJECT_NAME}
   src/main.cpp
-  src/Renderer/VulkanContext.cpp
-  src/Core/Window.cpp
   defines/volk_implementation.cpp
+  src/Core/Window.cpp
+  src/Renderer/VulkanContext.cpp
+  src/Renderer/Managers/VkInstanceManager.cpp
 )
 
 target_include_directories(${PROJECT_NAME} PRIVATE

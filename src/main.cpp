@@ -1,3 +1,17 @@
+#include <iostream>
+#include "Core/Window.h"
+#include "Renderer/VulkanContext.h"
+
 int main() {
+    std::cout << "We are all alone on life's journey, held captive by the limits of human conciousness.\n";
+    
+    if (!Window::Init(1920, 1080, "hi")) {
+        return -1;
+    }
+
+    if (!VulkanContext::Init()) {
+        return -1;
+    }
+
     return 0;
 }

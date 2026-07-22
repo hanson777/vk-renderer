@@ -3,7 +3,7 @@
 #include <cstdint>
 
 namespace Window {
-	void Init(uint32_t width, uint32_t height, const char* title);
+	bool Init(uint32_t width, uint32_t height, const char* title);
 	void BeginFrame();
 	bool ShouldClose();
 	void Shutdown();
