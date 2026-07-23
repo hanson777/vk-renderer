@@ -117,5 +117,6 @@ namespace VkInstanceManager {
         }
         if (g_surface != VK_NULL_HANDLE) vkDestroySurfaceKHR(g_instance, g_surface, nullptr);
         if (g_instance != VK_NULL_HANDLE) vkDestroyInstance(g_instance, nullptr);
+        volkFinalize();
     }
 }

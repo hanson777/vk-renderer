@@ -1,13 +1,12 @@
 #include "VulkanContext.h"
 #include "Managers/VkInstanceManager.h"
 #include <volk.h>
-#include <cstring>
 #include <iostream>
 
 namespace VulkanContext {
 
 	bool Init() {
-		if (volkInitialize() != VK_SUCCESS) {
+		if (!volkInitialize()) {
             std::cerr << "[ERROR::VKCONTEXT] failed to initialize volk\n";
 			return false;
 		}

@@ -66,6 +66,7 @@ add_executable(${PROJECT_NAME}
   src/Core/Window.cpp
   src/Renderer/VulkanContext.cpp
   src/Renderer/Managers/VkInstanceManager.cpp
+  src/Renderer/Managers/VkDeviceManager.cpp
 )
 
 target_include_directories(${PROJECT_NAME} PRIVATE
