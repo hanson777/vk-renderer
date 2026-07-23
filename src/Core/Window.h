@@ -10,5 +10,4 @@ namespace Window {
     GLFWwindow* GetWindowPointer();
     uint32_t GetWidth();
     uint32_t GetHeight();
-	const char** GetInstanceExtensions(uint32_t* extensionCount);
 }

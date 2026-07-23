@@ -1,18 +1,25 @@
 #include "VulkanContext.h"
 #include "Managers/VkInstanceManager.h"
+#include "Managers/VkDeviceManager.h"
 #include <volk.h>
 #include <iostream>
 
 namespace VulkanContext {
 
 	bool Init() {
-		if (!volkInitialize()) {
-            std::cerr << "[ERROR::VKCONTEXT] failed to initialize volk\n";
+        VkResult result = volkInitialize();
+		if (result != VK_SUCCESS) {
+            std::cerr << "[ERROR::VKCONTEXT] failed to initialize volk: " << result << '\n';
 			return false;
 		}
         
         if (!VkInstanceManager::Init()) { 
-            std::cerr << "[ERROR::VK_CONTEXT] failed to create instance\n";
+            std::cerr << "[ERROR::VK_CONTEXT] VkInstanceManager::Init() failed\n";
+            return false;
+        }
+
+        if (!VkDeviceManager::Init()) {
+            std::cerr << "[ERROR::VK_CONTEXT] VkDeviceManager::Init() failed\n";
             return false;
         }
 

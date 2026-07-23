@@ -1,5 +1,6 @@
 #include "VkInstanceManager.h"
 #include "../../Core/Window.h"
+#include <GLFW/glfw3.h>
 #include <volk.h>
 #include <cstdint>
 #include <iostream>
@@ -23,7 +24,7 @@ namespace VkInstanceManager {
     bool Init() {
         uint32_t glfwExtensionCount = 0;
 		const char** glfwExtensions;
-		glfwExtensions = Window::GetInstanceExtensions(&glfwExtensionCount);
+		glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
 
         std::vector<const char*> extensions(
             glfwExtensions,
@@ -118,5 +119,13 @@ namespace VkInstanceManager {
         if (g_surface != VK_NULL_HANDLE) vkDestroySurfaceKHR(g_instance, g_surface, nullptr);
         if (g_instance != VK_NULL_HANDLE) vkDestroyInstance(g_instance, nullptr);
         volkFinalize();
+    }
+
+    VkInstance GetInstance() {
+        return g_instance;
+    }
+
+    VkSurfaceKHR GetSurface() {
+        return g_surface;
     }
 }
