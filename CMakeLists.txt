@@ -7,7 +7,6 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 include(FetchContent)
 
-
 # glfw
 FetchContent_Declare(
     glfw
@@ -58,16 +57,25 @@ FetchContent_Declare(
     GIT_SHALLOW TRUE
 )
 
-FetchContent_MakeAvailable(glfw glm stb_image tinyobjloader volk)
+# vulkan memory allocator
+FetchContent_Declare(
+    VulkanMemoryAllocator
+    GIT_REPOSITORY https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator.git
+    GIT_TAG v3.4.0
+    GIT_SHALLOW TRUE
+)
+
+FetchContent_MakeAvailable(glfw glm stb_image tinyobjloader volk VulkanMemoryAllocator)
 
 add_executable(${PROJECT_NAME}
   src/main.cpp
   defines/volk_implementation.cpp
+  defines/vma_implementation.cpp
   src/Core/Window.cpp
   src/Renderer/VulkanContext.cpp
   src/Renderer/Managers/VkInstanceManager.cpp
   src/Renderer/Managers/VkDeviceManager.cpp
-)
+  src/Renderer/Managers/VkMemoryManager.cpp)
 
 target_include_directories(${PROJECT_NAME} PRIVATE
   ${stb_image_SOURCE_DIR}
@@ -78,4 +86,5 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     glfw
     glm::glm
     volk
+    GPUOpen::VulkanMemoryAllocator
 )

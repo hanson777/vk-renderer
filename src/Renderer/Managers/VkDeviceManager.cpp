@@ -43,13 +43,13 @@ namespace VkDeviceManager {
 		std::vector<VkQueueFamilyProperties2> queueFamilyProperties(queueFamilyCount, { .sType = VK_STRUCTURE_TYPE_QUEUE_FAMILY_PROPERTIES_2 });
 		vkGetPhysicalDeviceQueueFamilyProperties2(g_physicalDevice, &queueFamilyCount, queueFamilyProperties.data());
 
-		for (int currentFamilyIndex = 0; currentFamilyIndex < queueFamilyProperties.size(); currentFamilyIndex++) {
+		for (int i = 0; i < queueFamilyProperties.size(); i++) {
 			VkBool32 hasPresentSupport = VK_FALSE;
-			vkGetPhysicalDeviceSurfaceSupportKHR(g_physicalDevice, currentFamilyIndex, VkInstanceManager::GetSurface(), &hasPresentSupport);
+			vkGetPhysicalDeviceSurfaceSupportKHR(g_physicalDevice, i, VkInstanceManager::GetSurface(), &hasPresentSupport);
 
-			const auto& properties = queueFamilyProperties[currentFamilyIndex];
+			const auto& properties = queueFamilyProperties[i];
 			if (properties.queueFamilyProperties.queueFlags & VK_QUEUE_GRAPHICS_BIT && hasPresentSupport) {
-				g_graphicsQueueIndex = currentFamilyIndex;
+				g_graphicsQueueIndex = i;
 				return true;
 			}
 		}
