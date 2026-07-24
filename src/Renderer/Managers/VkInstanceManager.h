@@ -1,3 +1,4 @@
+#pragma once
 #include <volk.h>
 
 namespace VkInstanceManager {

@@ -13,10 +13,12 @@ namespace VkDeviceManager {
 	VkDevice g_logicalDevice = VK_NULL_HANDLE;
 
 	static bool findPhysicalDevice() {
+        VkInstance instance = VkInstanceManager::GetInstance();
+
 		uint32_t physicalDeviceCount = 0;
-		vkEnumeratePhysicalDevices(VkInstanceManager::GetInstance(), &physicalDeviceCount, nullptr);
+		vkEnumeratePhysicalDevices(instance, &physicalDeviceCount, nullptr);
 		std::vector<VkPhysicalDevice> physicalDevices(physicalDeviceCount);
-		vkEnumeratePhysicalDevices(VkInstanceManager::GetInstance(), &physicalDeviceCount, physicalDevices.data());
+		vkEnumeratePhysicalDevices(instance, &physicalDeviceCount, physicalDevices.data());
 
 		if (physicalDeviceCount != 0) {
 			g_physicalDevice = physicalDevices[0];
