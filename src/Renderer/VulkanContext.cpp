@@ -2,6 +2,7 @@
 #include "Managers/VkInstanceManager.h"
 #include "Managers/VkDeviceManager.h"
 #include "Managers/VkMemoryManager.h"
+#include "Managers/VkSwapchainManager.h"
 #include <volk.h>
 #include <iostream>
 
@@ -26,6 +27,11 @@ namespace VulkanContext {
 
         if (!VkMemoryManager::Init()) {
             std::cerr << "[ERROR::VK_CONTEXT] VkMemoryManager::Init() failed\n";
+            return false;
+        }
+
+        if (!VkSwapchainManager::Init()) {
+            std::cerr << "[ERROR::VK_CONTEXT] VkSwapchainManager::Init() failed\n";
             return false;
         }
 

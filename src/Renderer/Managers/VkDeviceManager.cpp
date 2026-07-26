@@ -2,13 +2,14 @@
 #include "VkInstanceManager.h"
 #include "volk.h"
 #include <cstdint>
+#include <limits>
 #include <vector>
 #include <iostream>
 
 namespace VkDeviceManager {
 
 	VkPhysicalDevice g_physicalDevice = VK_NULL_HANDLE;
-	uint32_t g_graphicsQueueIndex = UINT32_MAX;
+	uint32_t g_graphicsQueueIndex = std::numeric_limits<uint32_t>::max();
 	VkQueue g_graphicsQueue = VK_NULL_HANDLE;
 	VkDevice g_logicalDevice = VK_NULL_HANDLE;
 

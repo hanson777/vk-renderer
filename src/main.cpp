@@ -1,7 +1,6 @@
-#include <iostream>
 #include "Core/Window.h"
 #include "Renderer/VulkanContext.h"
-#include <volk.h>
+#include <iostream>
 
 int main() {
     std::cout << "We are all alone on life's journey, held captive by the limits of human conciousness.\n";

@@ -1,9 +1,12 @@
 #include "VkSwapchainManager.h"
 #include "VkInstanceManager.h"
 #include "VkDeviceManager.h"
-#include "vulkan/vulkan_core.h"
+#include "../../Core/Window.h"
 #include <volk.h>
+#include <GLFW/glfw3.h>
 #include <iostream>
+#include <algorithm>
+#include <vector>
 
 namespace VkSwapchainManager {
 
@@ -29,6 +32,19 @@ namespace VkSwapchainManager {
 
         return false;
     }
+
+    static VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities) {
+        if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
+            return capabilities.currentExtent;
+        }
+        int width, height;
+        glfwGetFramebufferSize(Window::GetWindowPointer(), &width, &height);
+
+        return {
+            std::clamp<uint32_t>(width, capabilities.minImageExtent.width, capabilities.maxImageExtent.width),
+            std::clamp<uint32_t>(height, capabilities.minImageExtent.height, capabilities.maxImageExtent.height)
+        };
+    }
     
     static bool CreateSwapchain() {
         VkPhysicalDevice physicalDevice = VkDeviceManager::GetPhysicalDevice();
@@ -48,7 +64,7 @@ namespace VkSwapchainManager {
         }
         g_swapchainImageFormat = imageFormat;
         
-        VkExtent2D swapchainExtent = surfaceCaps.currentExtent;
+        VkExtent2D swapchainExtent = chooseSwapExtent(surfaceCaps);
         VkSwapchainCreateInfoKHR swapchainCreateInfo{
             .sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
             .surface = surface, 
@@ -61,6 +77,7 @@ namespace VkSwapchainManager {
             .preTransform = surfaceCaps.currentTransform,
             .compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
             .presentMode = VK_PRESENT_MODE_FIFO_KHR,
+            .clipped = VK_TRUE,
         };
 
         if (vkCreateSwapchainKHR(logicalDevice, &swapchainCreateInfo, nullptr, &g_swapchain) != VK_SUCCESS) {

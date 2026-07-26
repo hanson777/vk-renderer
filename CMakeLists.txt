@@ -75,7 +75,8 @@ add_executable(${PROJECT_NAME}
   src/Renderer/VulkanContext.cpp
   src/Renderer/Managers/VkInstanceManager.cpp
   src/Renderer/Managers/VkDeviceManager.cpp
-  src/Renderer/Managers/VkMemoryManager.cpp)
+  src/Renderer/Managers/VkMemoryManager.cpp
+  src/Renderer/Managers/VkSwapchainManager.cpp)
 
 target_include_directories(${PROJECT_NAME} PRIVATE
   ${stb_image_SOURCE_DIR}
@@ -87,4 +88,9 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     glm::glm
     volk
     GPUOpen::VulkanMemoryAllocator
+)
+
+target_compile_definitions(${PROJECT_NAME} PRIVATE
+    VMA_STATIC_VULKAN_FUNCTIONS=0
+    VMA_DYNAMIC_VULKAN_FUNCTIONS=0
 )

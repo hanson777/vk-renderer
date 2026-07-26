@@ -112,7 +112,7 @@ namespace VkInstanceManager {
         return true;
     }
     
-    void Cleanup() {
+    void Shutdown() {
         if (g_validationEnabled && g_debugMessenger != VK_NULL_HANDLE) {
             vkDestroyDebugUtilsMessengerEXT(g_instance, g_debugMessenger, nullptr);
         }
