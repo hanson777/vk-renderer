@@ -1,8 +1,7 @@
-#pragma once
 #include "VkMemoryManager.h"
 #include "VkDeviceManager.h"
 #include "VkInstanceManager.h"
-#include <vma/vk_mem_alloc.h>
+#include <vk_mem_alloc.h>
 #include <cstdint>
 #include <iostream>
 
