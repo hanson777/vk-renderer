@@ -2,6 +2,7 @@
 #include "VkInstanceManager.h"
 #include "volk.h"
 #include <cstdint>
+#include <algorithm>
 #include <limits>
 #include <vector>
 #include <iostream>
@@ -120,7 +121,24 @@ namespace VkDeviceManager {
 			.pQueuePriorities = queuePriorities.data(),
 		};
 
-		const std::vector<const char*> deviceExtensions{ VK_KHR_SWAPCHAIN_EXTENSION_NAME };
+        uint32_t extensionCount;
+        vkEnumerateDeviceExtensionProperties(g_physicalDevice, nullptr, &extensionCount, nullptr);
+        std::vector<VkExtensionProperties> availableExtensions(extensionCount);
+        vkEnumerateDeviceExtensionProperties(g_physicalDevice, nullptr, &extensionCount, availableExtensions.data());
+
+		std::vector<const char*> deviceExtensions;
+        bool supportsSwapchain = std::find_if(availableExtensions.begin(), availableExtensions.end(), [](const auto& prop) { return strcmp(prop.extensionName, "VK_KHR_swapchain") == 0; }) != availableExtensions.end();
+        if (supportsSwapchain) { 
+            deviceExtensions.push_back("VK_KHR_swapchain"); 
+        } else { 
+            std::cerr << "[ERROR::VK_DEVICE] device does not support swapchain extension\n"; 
+        }
+
+        #ifdef __APPLE__
+            bool supportsPortability = std::find_if(availableExtensions.begin(), availableExtensions.end(), [](const auto& prop) { return strcmp(prop.extensionName, "VK_KHR_portability_subset") == 0; }) != availableExtensions.end();
+            if (supportsPortability) { deviceExtensions.push_back("VK_KHR_portability_subset"); }
+        #endif
+
 		VkDeviceCreateInfo deviceCreateInfo{
 			.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
 			.pNext = &features,
