@@ -72,11 +72,11 @@ add_executable(${PROJECT_NAME}
   defines/volk_implementation.cpp
   defines/vma_implementation.cpp
   src/Core/Window.cpp
-  src/Renderer/VulkanContext.cpp
-  src/Renderer/Managers/VkInstanceManager.cpp
-  src/Renderer/Managers/VkDeviceManager.cpp
-  src/Renderer/Managers/VkMemoryManager.cpp
-  src/Renderer/Managers/VkSwapchainManager.cpp)
+  src/Renderer/vk_context.cpp
+  src/Renderer/Managers/vk_instance.cpp
+  src/Renderer/Managers/vk_device.cpp
+  src/Renderer/Managers/vk_memory.cpp
+  src/Renderer/Managers/vk_swapchain.cpp)
 
 target_include_directories(${PROJECT_NAME} PRIVATE
   ${stb_image_SOURCE_DIR}

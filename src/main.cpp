@@ -1,5 +1,5 @@
 #include "Core/Window.h"
-#include "Renderer/VulkanContext.h"
+#include "Renderer/vk_context.h"
 #include <iostream>
 
 int main() {
@@ -9,7 +9,7 @@ int main() {
         return -1;
     }
 
-    if (!VulkanContext::Init()) {
+    if (!VkContext::Init()) {
         return -1;
     }
 

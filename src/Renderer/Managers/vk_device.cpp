@@ -1,5 +1,5 @@
-#include "VkDeviceManager.h"
-#include "VkInstanceManager.h"
+#include "vk_device.h"
+#include "vk_instance.h"
 #include "volk.h"
 #include <cstdint>
 #include <algorithm>
@@ -154,6 +154,7 @@ namespace VkDeviceManager {
 			std::cerr << "[ERROR::DEVICE_MANAGER] failed to create logical device: " << result << '\n';
 			return false;
 		}
+        volkLoadDevice(g_logicalDevice);
 
 		vkGetDeviceQueue(g_logicalDevice, g_graphicsQueueIndex, 0, &g_graphicsQueue);
 		if (g_graphicsQueue == VK_NULL_HANDLE) {

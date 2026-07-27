@@ -1,7 +1,7 @@
 #include "Window.h"
+#define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 #include <cstdint>
-#include <stdexcept>
 #include <iostream>
 
 namespace Window {
@@ -19,7 +19,7 @@ namespace Window {
 		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
 		g_handle = glfwCreateWindow(width, height, title, nullptr, nullptr);
-		if (!g_handle) {
+		if (g_handle == nullptr) {
             std::cerr << "[ERROR::WINDOW] failed to create window\n";
 			return false;
 		}
@@ -28,6 +28,9 @@ namespace Window {
 
 		g_height = height;
 		g_width = width;
+        
+        glfwMaximizeWindow(g_handle);
+        glfwSwapInterval(1);
         
         return true;
 	}

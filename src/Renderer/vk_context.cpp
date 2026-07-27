@@ -1,12 +1,12 @@
-#include "VulkanContext.h"
-#include "Managers/VkInstanceManager.h"
-#include "Managers/VkDeviceManager.h"
-#include "Managers/VkMemoryManager.h"
-#include "Managers/VkSwapchainManager.h"
+#include "vk_context.h"
+#include "Managers/vk_instance.h"
+#include "Managers/vk_device.h"
+#include "Managers/vk_memory.h"
+#include "Managers/vk_swapchain.h"
 #include <volk.h>
 #include <iostream>
 
-namespace VulkanContext {
+namespace VkContext {
 
 	bool Init() {
         VkResult result = volkInitialize();

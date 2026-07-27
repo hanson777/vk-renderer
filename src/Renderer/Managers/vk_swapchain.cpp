@@ -1,6 +1,7 @@
-#include "VkSwapchainManager.h"
-#include "VkInstanceManager.h"
-#include "VkDeviceManager.h"
+#include "vk_swapchain.h"
+#include "vk_instance.h"
+#include "vk_device.h"
+#include "vk_memory.h"
 #include "../../Core/Window.h"
 #include <volk.h>
 #include <GLFW/glfw3.h>
@@ -12,8 +13,12 @@ namespace VkSwapchainManager {
 
     VkSwapchainKHR g_swapchain = VK_NULL_HANDLE;
     VkFormat g_swapchainImageFormat = VK_FORMAT_UNDEFINED;
+    VkExtent2D g_swapchainExtent{};
     std::vector<VkImage> g_swapchainImages;
     std::vector<VkImageView> g_swapchainImageViews;
+    VkImage g_depthImage = nullptr;
+    VkImageView g_depthImageView = nullptr;
+    VmaAllocation g_depthImageAllocation = nullptr;
     
     static bool supportsImageFormat(const VkFormat format) { 
         VkPhysicalDevice physicalDevice = VkDeviceManager::GetPhysicalDevice();
@@ -64,14 +69,14 @@ namespace VkSwapchainManager {
         }
         g_swapchainImageFormat = imageFormat;
         
-        VkExtent2D swapchainExtent = chooseSwapExtent(surfaceCaps);
+        g_swapchainExtent = chooseSwapExtent(surfaceCaps);
         VkSwapchainCreateInfoKHR swapchainCreateInfo{
             .sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
             .surface = surface, 
             .minImageCount = surfaceCaps.minImageCount,
             .imageFormat = imageFormat,
             .imageColorSpace = VK_COLORSPACE_SRGB_NONLINEAR_KHR,
-            .imageExtent{.width = swapchainExtent.width, .height = swapchainExtent.height },
+            .imageExtent{.width = g_swapchainExtent.width, .height = g_swapchainExtent.height },
             .imageArrayLayers = 1,
             .imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
             .preTransform = surfaceCaps.currentTransform,
@@ -90,11 +95,12 @@ namespace VkSwapchainManager {
     
     static bool getSwapchainImages() {
         VkDevice logicalDevice = VkDeviceManager::GetLogicalDevice();
+        VkPhysicalDevice physicalDevice = VkDeviceManager::GetPhysicalDevice();
 
         uint32_t imageCount = 0;
         vkGetSwapchainImagesKHR(logicalDevice, g_swapchain, &imageCount, nullptr);
         g_swapchainImages.resize(imageCount);
-        vkGetSwapchainImagesKHR(logicalDevice, g_swapchain, &imageCount, nullptr);
+        vkGetSwapchainImagesKHR(logicalDevice, g_swapchain, &imageCount, g_swapchainImages.data());
         g_swapchainImageViews.resize(imageCount);
         
         for (size_t i = 0; i < g_swapchainImages.size(); i++) {
@@ -116,6 +122,39 @@ namespace VkSwapchainManager {
                 std::cerr << "[ERROR::SWAPCHAIN_MANAGER] failed to create swapchain image view\n";
                 return false;
             }
+        }
+
+        std::vector<VkFormat> depthFormats{ VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT };
+        VkFormat depthFormat = VK_FORMAT_UNDEFINED;
+        for (const VkFormat& format : depthFormats) {
+            VkFormatProperties2 formatProperties{ .sType = VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_2 };
+            vkGetPhysicalDeviceFormatProperties2(physicalDevice, format, &formatProperties);
+            if (formatProperties.formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT) {
+                depthFormat = format;
+                break;
+            }
+        }
+
+        VkImageCreateInfo depthImageCreateInfo{
+            .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+            .imageType = VK_IMAGE_TYPE_2D,
+            .format = depthFormat,
+            .extent{.width = g_swapchainExtent.width, .height = g_swapchainExtent.height, .depth = 1 },
+            .mipLevels = 1,
+            .arrayLayers = 1,
+            .samples = VK_SAMPLE_COUNT_1_BIT,
+            .tiling = VK_IMAGE_TILING_OPTIMAL,
+            .usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
+            .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+        };
+
+        VmaAllocationCreateInfo allocCreateInfo{
+            .flags = VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT,
+            .usage = VMA_MEMORY_USAGE_AUTO,
+        };
+
+        if (vmaCreateImage(VkMemoryManager::GetAllocator(), &depthImageCreateInfo, &allocCreateInfo, &g_depthImage, &g_depthImageAllocation, nullptr) != VK_SUCCESS) {
+            std::cerr << "[ERROR::SWAPCHAIN] error creating and allocating depth image\n";
         }
 
         return true;

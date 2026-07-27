@@ -1,6 +1,6 @@
 #pragma once
 
-namespace VkMemoryManager {
+namespace VkContext {
 	bool Init();
 	void Shutdown();
 }

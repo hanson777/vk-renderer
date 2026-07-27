@@ -1,6 +1,6 @@
-#include "VkMemoryManager.h"
-#include "VkDeviceManager.h"
-#include "VkInstanceManager.h"
+#include "vk_memory.h"
+#include "vk_device.h"
+#include "vk_instance.h"
 #include <vk_mem_alloc.h>
 #include <cstdint>
 #include <iostream>
@@ -39,4 +39,6 @@ namespace VkMemoryManager {
             vmaDestroyAllocator(g_allocator);
         }
     }
+
+    VmaAllocator GetAllocator() { return g_allocator; }
 }
