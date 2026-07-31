@@ -1,9 +1,9 @@
 #include "vk_swapchain.h"
+#include "Render/vk_common.h"
 #include "vk_instance.h"
 #include "vk_device.h"
 #include "vk_memory.h"
-#include "../../Core/Window.h"
-#include <volk.h>
+#include "Core/Window.h"
 #include <GLFW/glfw3.h>
 #include <iostream>
 #include <algorithm>
@@ -16,9 +16,10 @@ namespace VkSwapchainManager {
     VkExtent2D g_swapchainExtent{};
     std::vector<VkImage> g_swapchainImages;
     std::vector<VkImageView> g_swapchainImageViews;
-    VkImage g_depthImage = nullptr;
-    VkImageView g_depthImageView = nullptr;
-    VmaAllocation g_depthImageAllocation = nullptr;
+    VkImage g_depthImage = VK_NULL_HANDLE;
+    VkImageView g_depthImageView = VK_NULL_HANDLE;
+    VmaAllocation g_depthImageAllocation = VK_NULL_HANDLE;
+    std::vector<VkSemaphore> g_renderCompletedSemaphores;
     
     static bool supportsImageFormat(const VkFormat format) { 
         VkPhysicalDevice physicalDevice = VkDeviceManager::GetPhysicalDevice();
@@ -72,7 +73,7 @@ namespace VkSwapchainManager {
         g_swapchainExtent = chooseSwapExtent(surfaceCaps);
         VkSwapchainCreateInfoKHR swapchainCreateInfo{
             .sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
-            .surface = surface, 
+            .surface = surface,
             .minImageCount = surfaceCaps.minImageCount,
             .imageFormat = imageFormat,
             .imageColorSpace = VK_COLORSPACE_SRGB_NONLINEAR_KHR,
@@ -92,7 +93,7 @@ namespace VkSwapchainManager {
 
         return true;
     }
-    
+
     static bool getSwapchainImages() {
         VkDevice logicalDevice = VkDeviceManager::GetLogicalDevice();
         VkPhysicalDevice physicalDevice = VkDeviceManager::GetPhysicalDevice();
@@ -102,7 +103,7 @@ namespace VkSwapchainManager {
         g_swapchainImages.resize(imageCount);
         vkGetSwapchainImagesKHR(logicalDevice, g_swapchain, &imageCount, g_swapchainImages.data());
         g_swapchainImageViews.resize(imageCount);
-        
+
         for (size_t i = 0; i < g_swapchainImages.size(); i++) {
             VkImageViewCreateInfo imageViewCreateInfo{
                 .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
@@ -117,12 +118,28 @@ namespace VkSwapchainManager {
                     .layerCount = 1,
                 },
             };
-            
+
             if (vkCreateImageView(logicalDevice, &imageViewCreateInfo, nullptr, &g_swapchainImageViews[i]) != VK_SUCCESS) {
                 std::cerr << "[ERROR::SWAPCHAIN_MANAGER] failed to create swapchain image view\n";
                 return false;
             }
         }
+
+        g_renderCompletedSemaphores.resize(g_swapchainImages.size());
+        for (VkSemaphore& semaphore : g_renderCompletedSemaphores) {
+            VkSemaphoreCreateInfo semaphoreCreateInfo{ .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO };
+            if (vkCreateSemaphore(logicalDevice, &semaphoreCreateInfo, nullptr, &semaphore) != VK_SUCCESS) {
+                std::cerr << "[ERROR::SWAPCHAIN_MANAGER] failed to create semaphore\n";
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    static bool getDepthImages() {
+        VkDevice logicalDevice = VkDeviceManager::GetLogicalDevice();
+        VkPhysicalDevice physicalDevice = VkDeviceManager::GetPhysicalDevice();
 
         std::vector<VkFormat> depthFormats{ VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT };
         VkFormat depthFormat = VK_FORMAT_UNDEFINED;
@@ -157,11 +174,63 @@ namespace VkSwapchainManager {
             std::cerr << "[ERROR::SWAPCHAIN] error creating and allocating depth image\n";
         }
 
+        VkImageViewCreateInfo depthImageViewInfo{
+            .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+            .image = g_depthImage,
+            .viewType = VK_IMAGE_VIEW_TYPE_2D,
+            .format = depthFormat,
+            .subresourceRange{.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT, 
+                              .levelCount = 1, 
+                              .layerCount = 1,
+            },
+        };
+
+        if (vkCreateImageView(logicalDevice, &depthImageViewInfo, nullptr, &g_depthImageView) != VK_SUCCESS) {
+            std::cerr << "[ERROR::SWAPCHAIN_MANAGER] failed to create depth image view\n";
+            return false;
+        }
+
         return true;
     }
 
     bool Init() {
         if (!CreateSwapchain()) return false;
+        if (!getSwapchainImages()) return false;
+        if (!getDepthImages()) return false;
         return true;
+    }
+
+    void Shutdown() {
+        VkDevice logicalDevice = VkDeviceManager::GetLogicalDevice();
+
+        for (VkImageView& swapchainImageView : g_swapchainImageViews) {
+            if (swapchainImageView != VK_NULL_HANDLE) {
+                vkDestroyImageView(logicalDevice, swapchainImageView, nullptr);
+            }
+        }
+        g_swapchainImageViews.clear();
+
+        for (VkSemaphore& semaphore : g_renderCompletedSemaphores) {
+            if (semaphore != VK_NULL_HANDLE) {
+                vkDestroySemaphore(logicalDevice, semaphore, nullptr);
+            }
+        }
+        g_renderCompletedSemaphores.clear();
+        
+        if (g_swapchain != VK_NULL_HANDLE) {
+            vkDestroySwapchainKHR(logicalDevice, g_swapchain, nullptr);
+            g_swapchain = VK_NULL_HANDLE;
+            g_swapchainImages.clear();
+        }
+
+        if (g_depthImageView != VK_NULL_HANDLE) {
+            vkDestroyImageView(logicalDevice, g_depthImageView, nullptr);
+            g_depthImageView = VK_NULL_HANDLE;
+        }
+
+        if (g_depthImage != VK_NULL_HANDLE) {
+            vmaDestroyImage(VkMemoryManager::GetAllocator(), g_depthImage, g_depthImageAllocation);
+            g_depthImage = VK_NULL_HANDLE;
+        }
     }
 }

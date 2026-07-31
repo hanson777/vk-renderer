@@ -1,9 +1,9 @@
 #include "vk_context.h"
+#include "vk_common.h"
 #include "Managers/vk_instance.h"
 #include "Managers/vk_device.h"
 #include "Managers/vk_memory.h"
 #include "Managers/vk_swapchain.h"
-#include <volk.h>
 #include <iostream>
 
 namespace VkContext {
@@ -39,6 +39,7 @@ namespace VkContext {
 	}
 
     void Shutdown() {
+        VkSwapchainManager::Shutdown();
         VkMemoryManager::Shutdown();
         VkInstanceManager::Shutdown();
     }

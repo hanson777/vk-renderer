@@ -24,12 +24,12 @@ namespace Window {
 			return false;
 		}
 
-		glfwSetInputMode(g_handle, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+		// glfwSetInputMode(g_handle, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
 		g_height = height;
 		g_width = width;
         
-        glfwMaximizeWindow(g_handle);
+        // glfwMaximizeWindow(g_handle);
         glfwSwapInterval(1);
         
         return true;

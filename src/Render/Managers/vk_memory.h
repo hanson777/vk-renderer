@@ -1,5 +1,5 @@
 #pragma once
-#include <vk_mem_alloc.h>
+#include "Render/vk_common.h"
 
 namespace VkMemoryManager {
 	bool Init();

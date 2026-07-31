@@ -1,5 +1,5 @@
 #pragma once
-#include <volk.h>
+#include "Render/vk_common.h"
 
 namespace VkDeviceManager {
 	bool Init();

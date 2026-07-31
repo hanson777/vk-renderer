@@ -72,15 +72,16 @@ add_executable(${PROJECT_NAME}
   defines/volk_implementation.cpp
   defines/vma_implementation.cpp
   src/Core/Window.cpp
-  src/Renderer/vk_context.cpp
-  src/Renderer/Managers/vk_instance.cpp
-  src/Renderer/Managers/vk_device.cpp
-  src/Renderer/Managers/vk_memory.cpp
-  src/Renderer/Managers/vk_swapchain.cpp)
+  src/Render/vk_context.cpp
+  src/Render/Managers/vk_instance.cpp
+  src/Render/Managers/vk_device.cpp
+  src/Render/Managers/vk_memory.cpp
+  src/Render/Managers/vk_swapchain.cpp)
 
 target_include_directories(${PROJECT_NAME} PRIVATE
   ${stb_image_SOURCE_DIR}
   ${tinyobjloader_SOURCE_DIR}
+  ${CMAKE_SOURCE_DIR}/src
 )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
@@ -88,9 +89,4 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     glm::glm
     volk
     GPUOpen::VulkanMemoryAllocator
-)
-
-target_compile_definitions(${PROJECT_NAME} PRIVATE
-    VMA_STATIC_VULKAN_FUNCTIONS=0
-    VMA_DYNAMIC_VULKAN_FUNCTIONS=0
 )

@@ -1,7 +1,7 @@
 #include "vk_memory.h"
+#include "Render/vk_common.h"
 #include "vk_device.h"
 #include "vk_instance.h"
-#include <vk_mem_alloc.h>
 #include <cstdint>
 #include <iostream>
 
