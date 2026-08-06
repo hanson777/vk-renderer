@@ -84,7 +84,7 @@ namespace VkDeviceManager {
 		};
 
 		vkGetPhysicalDeviceFeatures2(g_physicalDevice, &supportedFeatures);
-		if (!supportedFeatures13.dynamicRendering || !supportedFeatures13.synchronization2 || !supportedFeatures12.timelineSemaphore) {
+		if (!supportedFeatures13.dynamicRendering || !supportedFeatures13.synchronization2 || !supportedFeatures12.timelineSemaphore || !supportedFeatures14.maintenance5) {
 			std::cerr << "[ERROR::DEVICE_MANAGER] physical device doesn't meet feature requirements\n";
 			return false;
 		}
@@ -93,6 +93,7 @@ namespace VkDeviceManager {
 		VkPhysicalDeviceVulkan14Features features14{
 			.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_4_FEATURES,
 			.pNext = nullptr,
+			.maintenance5 = VK_TRUE,
 		};
 
 		VkPhysicalDeviceVulkan13Features features13{

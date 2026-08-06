@@ -85,7 +85,9 @@ add_executable(${PROJECT_NAME}
   src/Render/Managers/vk_device.cpp
   src/Render/Managers/vk_memory.cpp
   src/Render/Managers/vk_swapchain.cpp
- "src/Render/vk_shader.cpp")
+  src/Render/vk_shader.cpp
+  src/Render/Managers/vk_pipeline.cpp
+)
 
 target_include_directories(${PROJECT_NAME} PRIVATE
   ${stb_image_SOURCE_DIR}
