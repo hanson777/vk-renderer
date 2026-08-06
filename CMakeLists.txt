@@ -65,7 +65,15 @@ FetchContent_Declare(
     GIT_SHALLOW TRUE
 )
 
-FetchContent_MakeAvailable(glfw glm stb_image tinyobjloader volk VulkanMemoryAllocator)
+# slang
+FetchContent_Declare(
+   slang
+   GIT_REPOSITORY https://github.com/shader-slang/slang.git
+   GIT_TAG v2026.14.1
+   GIT_SHALLOW TRUE
+)
+
+FetchContent_MakeAvailable(glfw glm stb_image tinyobjloader volk VulkanMemoryAllocator slang)
 
 add_executable(${PROJECT_NAME}
   src/main.cpp
@@ -76,7 +84,8 @@ add_executable(${PROJECT_NAME}
   src/Render/Managers/vk_instance.cpp
   src/Render/Managers/vk_device.cpp
   src/Render/Managers/vk_memory.cpp
-  src/Render/Managers/vk_swapchain.cpp)
+  src/Render/Managers/vk_swapchain.cpp
+ "src/Render/vk_shader.cpp")
 
 target_include_directories(${PROJECT_NAME} PRIVATE
   ${stb_image_SOURCE_DIR}
@@ -89,4 +98,5 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     glm::glm
     volk
     GPUOpen::VulkanMemoryAllocator
+    slang
 )

@@ -1,3 +1,0 @@
-namespace VkSyncManager {
-	bool Init();
-}
