@@ -18,6 +18,7 @@ namespace VkSwapchainManager {
     std::vector<VkImageView> g_swapchainImageViews;
     VkImage g_depthImage = VK_NULL_HANDLE;
     VkImageView g_depthImageView = VK_NULL_HANDLE;
+    VkFormat g_depthImageFormat = VK_FORMAT_UNDEFINED;
     VmaAllocation g_depthImageAllocation = VK_NULL_HANDLE;
     std::vector<VkSemaphore> g_renderCompletedSemaphores;
     
@@ -142,12 +143,11 @@ namespace VkSwapchainManager {
         VkPhysicalDevice physicalDevice = VkDeviceManager::GetPhysicalDevice();
 
         std::vector<VkFormat> depthFormats{ VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT };
-        VkFormat depthFormat = VK_FORMAT_UNDEFINED;
         for (const VkFormat& format : depthFormats) {
             VkFormatProperties2 formatProperties{ .sType = VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_2 };
             vkGetPhysicalDeviceFormatProperties2(physicalDevice, format, &formatProperties);
             if (formatProperties.formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT) {
-                depthFormat = format;
+                g_depthImageFormat = format;
                 break;
             }
         }
@@ -155,7 +155,7 @@ namespace VkSwapchainManager {
         VkImageCreateInfo depthImageCreateInfo{
             .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
             .imageType = VK_IMAGE_TYPE_2D,
-            .format = depthFormat,
+            .format = g_depthImageFormat,
             .extent{.width = g_swapchainExtent.width, .height = g_swapchainExtent.height, .depth = 1 },
             .mipLevels = 1,
             .arrayLayers = 1,
@@ -178,7 +178,7 @@ namespace VkSwapchainManager {
             .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
             .image = g_depthImage,
             .viewType = VK_IMAGE_VIEW_TYPE_2D,
-            .format = depthFormat,
+            .format = g_depthImageFormat,
             .subresourceRange{.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT, 
                               .levelCount = 1, 
                               .layerCount = 1,
@@ -233,4 +233,8 @@ namespace VkSwapchainManager {
             g_depthImage = VK_NULL_HANDLE;
         }
     }
+
+    VkFormat* GetSwapchainImageFormat() { return &g_swapchainImageFormat; }
+    
+    VkFormat GetDepthImageFormat() { return g_depthImageFormat; }
 }
