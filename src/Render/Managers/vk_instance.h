@@ -1,7 +1,7 @@
 #pragma once
 #include "Render/vk_common.h"
 
-namespace VkInstanceManager {
+namespace vk_instance {
     bool Init();
     void Shutdown();
     

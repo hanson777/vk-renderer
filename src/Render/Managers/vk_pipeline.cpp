@@ -7,7 +7,7 @@
 #include <vector>
 #include <cstdint>
 
-namespace VkPipelineManager {
+namespace vk_pipeline {
 	
 	VkPipelineLayout g_pipelineLayout = VK_NULL_HANDLE;
 	VkPipeline g_pipeline = VK_NULL_HANDLE;
@@ -20,7 +20,7 @@ namespace VkPipelineManager {
 			.pushConstantRangeCount = 0,
 		};
 
-		const VkDevice device = VkDeviceManager::GetLogicalDevice();
+		const VkDevice device = vk_device::getDevice();
 		if (vkCreatePipelineLayout(device, &pipelineLayoutCreateInfo, nullptr, &g_pipelineLayout) != VK_SUCCESS) {
 			std::cerr << "[ERROR::PIPELINE_MANAGER] failed to create pipeline layout\n";
 			return false;
@@ -95,8 +95,8 @@ namespace VkPipelineManager {
 		VkPipelineRenderingCreateInfo renderingCreateInfo{
 			.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
 			.colorAttachmentCount = 1,
-			.pColorAttachmentFormats = VkSwapchainManager::GetSwapchainImageFormat(),
-			.depthAttachmentFormat = VkSwapchainManager::GetDepthImageFormat(),
+			.pColorAttachmentFormats = vk_swapchain::GetSwapchainImageFormat(),
+			.depthAttachmentFormat = vk_swapchain::GetDepthImageFormat(),
 		};
 
 		VkGraphicsPipelineCreateInfo pipelineCreateInfo{

@@ -7,15 +7,26 @@
 #include <vector>
 #include <iostream>
 
-namespace VkDeviceManager {
+namespace vk_device {
 
 	VkPhysicalDevice g_physicalDevice = VK_NULL_HANDLE;
 	uint32_t g_graphicsQueueIndex = std::numeric_limits<uint32_t>::max();
 	VkQueue g_graphicsQueue = VK_NULL_HANDLE;
-	VkDevice g_logicalDevice = VK_NULL_HANDLE;
+	VkDevice g_device = VK_NULL_HANDLE;
+
+	static bool findPhysicalDevice();
+	static bool findQueueFamilyIndex();
+	static bool createDevice();
+
+	bool Init() {
+		if (!findPhysicalDevice())   return false;
+		if (!findQueueFamilyIndex()) return false;
+		if (!createDevice())  return false;
+		return true;
+	}
 
 	static bool findPhysicalDevice() {
-        VkInstance instance = VkInstanceManager::GetInstance();
+        VkInstance instance = vk_instance::GetInstance();
 
 		uint32_t physicalDeviceCount = 0;
 		vkEnumeratePhysicalDevices(instance, &physicalDeviceCount, nullptr);
@@ -49,7 +60,7 @@ namespace VkDeviceManager {
 
 		for (int i = 0; i < queueFamilyProperties.size(); i++) {
 			VkBool32 hasPresentSupport = VK_FALSE;
-			vkGetPhysicalDeviceSurfaceSupportKHR(g_physicalDevice, i, VkInstanceManager::GetSurface(), &hasPresentSupport);
+			vkGetPhysicalDeviceSurfaceSupportKHR(g_physicalDevice, i, vk_instance::GetSurface(), &hasPresentSupport);
 
 			const auto& properties = queueFamilyProperties[i];
 			if (properties.queueFamilyProperties.queueFlags & VK_QUEUE_GRAPHICS_BIT && hasPresentSupport) {
@@ -61,7 +72,7 @@ namespace VkDeviceManager {
 		return false;
 	}
 
-	static bool createLogicalDevice() {
+	static bool createDevice() {
 		// query supported features
 		VkPhysicalDeviceVulkan14Features supportedFeatures14{
 			.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_4_FEATURES,
@@ -133,6 +144,7 @@ namespace VkDeviceManager {
             deviceExtensions.push_back("VK_KHR_swapchain"); 
         } else { 
             std::cerr << "[ERROR::VK_DEVICE] device does not support swapchain extension\n"; 
+			return false;
         }
 
         #ifdef __APPLE__
@@ -150,26 +162,19 @@ namespace VkDeviceManager {
 			.pEnabledFeatures = nullptr,
 		};
 
-		VkResult result = vkCreateDevice(g_physicalDevice, &deviceCreateInfo, nullptr, &g_logicalDevice);
+		VkResult result = vkCreateDevice(g_physicalDevice, &deviceCreateInfo, nullptr, &g_device);
 		if (result != VK_SUCCESS) {
 			std::cerr << "[ERROR::DEVICE_MANAGER] failed to create logical device: " << result << '\n';
 			return false;
 		}
-        volkLoadDevice(g_logicalDevice);
+        volkLoadDevice(g_device);
 
-		vkGetDeviceQueue(g_logicalDevice, g_graphicsQueueIndex, 0, &g_graphicsQueue);
+		vkGetDeviceQueue(g_device, g_graphicsQueueIndex, 0, &g_graphicsQueue);
 		if (g_graphicsQueue == VK_NULL_HANDLE) {
 			std::cerr << "[ERROR::DEVICE_MANAGER] failed to get graphics queue device\n";
 			return false;
 		}
 
-		return true;
-	}
-
-	bool Init() {
-		if (!findPhysicalDevice())   return false;
-		if (!findQueueFamilyIndex()) return false;
-		if (!createLogicalDevice())  return false;
 		return true;
 	}
 
@@ -181,7 +186,7 @@ namespace VkDeviceManager {
 		return g_graphicsQueue;
 	}
 
-	VkDevice GetLogicalDevice() {
-		return g_logicalDevice;
+	VkDevice GetDevice() {
+		return g_device;
 	}
 }

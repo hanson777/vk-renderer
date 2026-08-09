@@ -6,7 +6,7 @@
 #include "Managers/vk_swapchain.h"
 #include <iostream>
 
-namespace VkContext {
+namespace vk_context {
 
 	bool Init() {
         VkResult result = volkInitialize();
@@ -15,23 +15,23 @@ namespace VkContext {
 			return false;
 		}
         
-        if (!VkInstanceManager::Init()) { 
-            std::cerr << "[ERROR::VK_CONTEXT] VkInstanceManager::Init() failed\n";
+        if (!vk_instance::Init()) { 
+            std::cerr << "[ERROR::VK_CONTEXT] vk_instance::Init() failed\n";
             return false;
         }
 
-        if (!VkDeviceManager::Init()) {
-            std::cerr << "[ERROR::VK_CONTEXT] VkDeviceManager::Init() failed\n";
+        if (!vk_device::Init()) {
+            std::cerr << "[ERROR::VK_CONTEXT] vk_device::Init() failed\n";
             return false;
         }
 
-        if (!VkMemoryManager::Init()) {
+        if (!vk_memory::Init()) {
             std::cerr << "[ERROR::VK_CONTEXT] VkMemoryManager::Init() failed\n";
             return false;
         }
 
-        if (!VkSwapchainManager::Init()) {
-            std::cerr << "[ERROR::VK_CONTEXT] VkSwapchainManager::Init() failed\n";
+        if (!vk_swapchain::Init()) {
+            std::cerr << "[ERROR::VK_CONTEXT] vk_swapchain::Init() failed\n";
             return false;
         }
 
@@ -39,8 +39,8 @@ namespace VkContext {
 	}
 
     void Shutdown() {
-        VkSwapchainManager::Shutdown();
-        VkMemoryManager::Shutdown();
-        VkInstanceManager::Shutdown();
+        vk_swapchain::Shutdown();
+        vk_memory::Shutdown();
+        vk_instance::Shutdown();
     }
 }

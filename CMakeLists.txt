@@ -87,6 +87,7 @@ add_executable(${PROJECT_NAME}
   src/Render/Managers/vk_swapchain.cpp
   src/Render/vk_shader.cpp
   src/Render/Managers/vk_pipeline.cpp
+  src/Render/Managers/vk_sync.cpp
 )
 
 target_include_directories(${PROJECT_NAME} PRIVATE

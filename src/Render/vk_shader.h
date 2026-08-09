@@ -2,7 +2,7 @@
 #include "vk_common.h"
 #include <string>
 
-namespace Shader {
+namespace shader {
 	bool InitSlangSession();
 }
 

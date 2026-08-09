@@ -5,7 +5,7 @@
 #include <cstdint>
 #include <iostream>
 
-namespace VkMemoryManager {
+namespace vk_memory {
 
     constexpr uint32_t VK_VERSION = VK_API_VERSION_1_4;
 
@@ -17,10 +17,10 @@ namespace VkMemoryManager {
 
         VmaAllocatorCreateInfo allocatorCreateInfo{
             .flags = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT,
-            .physicalDevice = VkDeviceManager::GetPhysicalDevice(),
-            .device = VkDeviceManager::GetLogicalDevice(),
+            .physicalDevice = vk_device::GetPhysicalDevice(),
+            .device = vk_device::GetDevice(),
             .pVulkanFunctions = &vulkanFunctions,
-            .instance = VkInstanceManager::GetInstance(),
+            .instance = vk_instance::GetInstance(),
             .vulkanApiVersion = VK_VERSION,
         };
 

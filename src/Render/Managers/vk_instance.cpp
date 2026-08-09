@@ -6,7 +6,7 @@
 #include <iostream>
 #include <vector>
 
-namespace VkInstanceManager {
+namespace vk_instance {
 
 	constexpr uint32_t VK_VERSION = VK_API_VERSION_1_4;
 

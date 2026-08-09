@@ -1,6 +1,6 @@
 #pragma once
 
-namespace VkPipelineManager {
+namespace vk_pipeline {
 	bool Init();
 	void AddShader();
 }

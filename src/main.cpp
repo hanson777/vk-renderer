@@ -9,7 +9,7 @@ int main() {
         return -1;
     }
 
-    if (!VkContext::Init()) {
+    if (!vk_context::Init()) {
         return -1;
     }
 

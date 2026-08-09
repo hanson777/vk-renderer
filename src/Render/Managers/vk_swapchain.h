@@ -1,7 +1,8 @@
 #pragma once
 #include "Render/vk_common.h"
+#include <vector>
 
-namespace VkSwapchainManager {
+namespace vk_swapchain {
     bool Init();
     void Shutdown();
     
@@ -9,4 +10,5 @@ namespace VkSwapchainManager {
     
     VkFormat* GetSwapchainImageFormat();
     VkFormat GetDepthImageFormat();
+    std::vector<VkImage>& GetSwapchainImages();
 }

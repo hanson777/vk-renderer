@@ -1,9 +1,9 @@
 #pragma once
 #include "Render/vk_common.h"
 
-namespace VkDeviceManager {
+namespace vk_device {
 	bool Init();
 	VkPhysicalDevice GetPhysicalDevice();
-	VkDevice GetLogicalDevice();
+	VkDevice GetDevice();
 	VkQueue GetQueue();
 }

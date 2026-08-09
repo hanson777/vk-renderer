@@ -8,55 +8,77 @@
 #include <iostream>
 #include <algorithm>
 #include <vector>
+#include <cstdint>
 
-namespace VkSwapchainManager {
+namespace vk_swapchain {
 
     VkSwapchainKHR g_swapchain = VK_NULL_HANDLE;
+
     VkFormat g_swapchainImageFormat = VK_FORMAT_UNDEFINED;
     VkExtent2D g_swapchainExtent{};
+
     std::vector<VkImage> g_swapchainImages;
     std::vector<VkImageView> g_swapchainImageViews;
+
     VkImage g_depthImage = VK_NULL_HANDLE;
     VkImageView g_depthImageView = VK_NULL_HANDLE;
     VkFormat g_depthImageFormat = VK_FORMAT_UNDEFINED;
     VmaAllocation g_depthImageAllocation = VK_NULL_HANDLE;
-    std::vector<VkSemaphore> g_renderCompletedSemaphores;
-    
-    static bool supportsImageFormat(const VkFormat format) { 
-        VkPhysicalDevice physicalDevice = VkDeviceManager::GetPhysicalDevice();
-        VkSurfaceKHR surface = VkInstanceManager::GetSurface();
 
-        uint32_t formatCount = 0;
-        vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &formatCount, nullptr);
-        std::vector<VkSurfaceFormatKHR> surfaceFormats(formatCount);
-        vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &formatCount, surfaceFormats.data());
-        
-        for (const auto& surfaceFormat : surfaceFormats) {
-            if (surfaceFormat.format == format) {
-                return true;
+    std::vector<VkSemaphore> g_renderCompletedSemaphores;
+
+    static bool createSwapchain();
+    static bool getSwapchainImages();
+    static bool getDepthImages();
+
+    static VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
+    static bool supportsImageFormat(const VkFormat format);
+
+    bool Init() {
+        if (!createSwapchain()) return false;
+        if (!getSwapchainImages()) return false;
+        if (!getDepthImages()) return false;
+        return true;
+    }
+
+    void Shutdown() {
+        VkDevice device = vk_device::Getdevice();
+
+        for (VkImageView& swapchainImageView : g_swapchainImageViews) {
+            if (swapchainImageView != VK_NULL_HANDLE) {
+                vkDestroyImageView(device, swapchainImageView, nullptr);
             }
         }
+        g_swapchainImageViews.clear();
 
-        return false;
-    }
-
-    static VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities) {
-        if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
-            return capabilities.currentExtent;
+        for (VkSemaphore& semaphore : g_renderCompletedSemaphores) {
+            if (semaphore != VK_NULL_HANDLE) {
+                vkDestroySemaphore(device, semaphore, nullptr);
+            }
         }
-        int width, height;
-        glfwGetFramebufferSize(Window::GetWindowPointer(), &width, &height);
+        g_renderCompletedSemaphores.clear();
 
-        return {
-            std::clamp<uint32_t>(width, capabilities.minImageExtent.width, capabilities.maxImageExtent.width),
-            std::clamp<uint32_t>(height, capabilities.minImageExtent.height, capabilities.maxImageExtent.height)
-        };
+        if (g_swapchain != VK_NULL_HANDLE) {
+            vkDestroySwapchainKHR(device, g_swapchain, nullptr);
+            g_swapchain = VK_NULL_HANDLE;
+            g_swapchainImages.clear();
+        }
+
+        if (g_depthImageView != VK_NULL_HANDLE) {
+            vkDestroyImageView(device, g_depthImageView, nullptr);
+            g_depthImageView = VK_NULL_HANDLE;
+        }
+
+        if (g_depthImage != VK_NULL_HANDLE) {
+            vmaDestroyImage(vk_memory::GetAllocator(), g_depthImage, g_depthImageAllocation);
+            g_depthImage = VK_NULL_HANDLE;
+        }
     }
     
-    static bool CreateSwapchain() {
-        VkPhysicalDevice physicalDevice = VkDeviceManager::GetPhysicalDevice();
-        VkDevice logicalDevice = VkDeviceManager::GetLogicalDevice();
-        VkSurfaceKHR surface = VkInstanceManager::GetSurface();
+    static bool createSwapchain() {
+        VkPhysicalDevice physicalDevice = vk_device::GetPhysicalDevice();
+        VkDevice device = vk_device::Getdevice();
+        VkSurfaceKHR surface = vk_instance::GetSurface();
 
         VkSurfaceCapabilitiesKHR surfaceCaps{};
         if (vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface, &surfaceCaps) != VK_SUCCESS) {
@@ -87,7 +109,7 @@ namespace VkSwapchainManager {
             .clipped = VK_TRUE,
         };
 
-        if (vkCreateSwapchainKHR(logicalDevice, &swapchainCreateInfo, nullptr, &g_swapchain) != VK_SUCCESS) {
+        if (vkCreateSwapchainKHR(device, &swapchainCreateInfo, nullptr, &g_swapchain) != VK_SUCCESS) {
             std::cerr << "[ERROR::SWAPCHAIN_MANAGER] failed to create swapchain\n";
             return false;
         }
@@ -96,13 +118,13 @@ namespace VkSwapchainManager {
     }
 
     static bool getSwapchainImages() {
-        VkDevice logicalDevice = VkDeviceManager::GetLogicalDevice();
-        VkPhysicalDevice physicalDevice = VkDeviceManager::GetPhysicalDevice();
+        VkDevice device = vk_device::Getdevice();
+        VkPhysicalDevice physicalDevice = vk_device::GetPhysicalDevice();
 
         uint32_t imageCount = 0;
-        vkGetSwapchainImagesKHR(logicalDevice, g_swapchain, &imageCount, nullptr);
+        vkGetSwapchainImagesKHR(device, g_swapchain, &imageCount, nullptr);
         g_swapchainImages.resize(imageCount);
-        vkGetSwapchainImagesKHR(logicalDevice, g_swapchain, &imageCount, g_swapchainImages.data());
+        vkGetSwapchainImagesKHR(device, g_swapchain, &imageCount, g_swapchainImages.data());
         g_swapchainImageViews.resize(imageCount);
 
         for (size_t i = 0; i < g_swapchainImages.size(); i++) {
@@ -120,17 +142,8 @@ namespace VkSwapchainManager {
                 },
             };
 
-            if (vkCreateImageView(logicalDevice, &imageViewCreateInfo, nullptr, &g_swapchainImageViews[i]) != VK_SUCCESS) {
+            if (vkCreateImageView(device, &imageViewCreateInfo, nullptr, &g_swapchainImageViews[i]) != VK_SUCCESS) {
                 std::cerr << "[ERROR::SWAPCHAIN_MANAGER] failed to create swapchain image view\n";
-                return false;
-            }
-        }
-
-        g_renderCompletedSemaphores.resize(g_swapchainImages.size());
-        for (VkSemaphore& semaphore : g_renderCompletedSemaphores) {
-            VkSemaphoreCreateInfo semaphoreCreateInfo{ .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO };
-            if (vkCreateSemaphore(logicalDevice, &semaphoreCreateInfo, nullptr, &semaphore) != VK_SUCCESS) {
-                std::cerr << "[ERROR::SWAPCHAIN_MANAGER] failed to create semaphore\n";
                 return false;
             }
         }
@@ -139,8 +152,8 @@ namespace VkSwapchainManager {
     }
 
     static bool getDepthImages() {
-        VkDevice logicalDevice = VkDeviceManager::GetLogicalDevice();
-        VkPhysicalDevice physicalDevice = VkDeviceManager::GetPhysicalDevice();
+        VkDevice device = vk_device::Getdevice();
+        VkPhysicalDevice physicalDevice = vk_device::GetPhysicalDevice();
 
         std::vector<VkFormat> depthFormats{ VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT };
         for (const VkFormat& format : depthFormats) {
@@ -170,7 +183,7 @@ namespace VkSwapchainManager {
             .usage = VMA_MEMORY_USAGE_AUTO,
         };
 
-        if (vmaCreateImage(VkMemoryManager::GetAllocator(), &depthImageCreateInfo, &allocCreateInfo, &g_depthImage, &g_depthImageAllocation, nullptr) != VK_SUCCESS) {
+        if (vmaCreateImage(vk_memory::GetAllocator(), &depthImageCreateInfo, &allocCreateInfo, &g_depthImage, &g_depthImageAllocation, nullptr) != VK_SUCCESS) {
             std::cerr << "[ERROR::SWAPCHAIN] error creating and allocating depth image\n";
         }
 
@@ -185,7 +198,7 @@ namespace VkSwapchainManager {
             },
         };
 
-        if (vkCreateImageView(logicalDevice, &depthImageViewInfo, nullptr, &g_depthImageView) != VK_SUCCESS) {
+        if (vkCreateImageView(device, &depthImageViewInfo, nullptr, &g_depthImageView) != VK_SUCCESS) {
             std::cerr << "[ERROR::SWAPCHAIN_MANAGER] failed to create depth image view\n";
             return false;
         }
@@ -193,48 +206,40 @@ namespace VkSwapchainManager {
         return true;
     }
 
-    bool Init() {
-        if (!CreateSwapchain()) return false;
-        if (!getSwapchainImages()) return false;
-        if (!getDepthImages()) return false;
-        return true;
+    static bool supportsImageFormat(const VkFormat format) {
+        VkPhysicalDevice physicalDevice = vk_device::GetPhysicalDevice();
+        VkSurfaceKHR surface = vk_instance::GetSurface();
+
+        uint32_t formatCount = 0;
+        vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &formatCount, nullptr);
+        std::vector<VkSurfaceFormatKHR> surfaceFormats(formatCount);
+        vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &formatCount, surfaceFormats.data());
+
+        for (const auto& surfaceFormat : surfaceFormats) {
+            if (surfaceFormat.format == format) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
-    void Shutdown() {
-        VkDevice logicalDevice = VkDeviceManager::GetLogicalDevice();
+    static VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities) {
+        if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
+            return capabilities.currentExtent;
+        }
+        int width, height;
+        glfwGetFramebufferSize(Window::GetWindowPointer(), &width, &height);
 
-        for (VkImageView& swapchainImageView : g_swapchainImageViews) {
-            if (swapchainImageView != VK_NULL_HANDLE) {
-                vkDestroyImageView(logicalDevice, swapchainImageView, nullptr);
-            }
-        }
-        g_swapchainImageViews.clear();
-
-        for (VkSemaphore& semaphore : g_renderCompletedSemaphores) {
-            if (semaphore != VK_NULL_HANDLE) {
-                vkDestroySemaphore(logicalDevice, semaphore, nullptr);
-            }
-        }
-        g_renderCompletedSemaphores.clear();
-        
-        if (g_swapchain != VK_NULL_HANDLE) {
-            vkDestroySwapchainKHR(logicalDevice, g_swapchain, nullptr);
-            g_swapchain = VK_NULL_HANDLE;
-            g_swapchainImages.clear();
-        }
-
-        if (g_depthImageView != VK_NULL_HANDLE) {
-            vkDestroyImageView(logicalDevice, g_depthImageView, nullptr);
-            g_depthImageView = VK_NULL_HANDLE;
-        }
-
-        if (g_depthImage != VK_NULL_HANDLE) {
-            vmaDestroyImage(VkMemoryManager::GetAllocator(), g_depthImage, g_depthImageAllocation);
-            g_depthImage = VK_NULL_HANDLE;
-        }
+        return {
+            std::clamp<uint32_t>(width, capabilities.minImageExtent.width, capabilities.maxImageExtent.width),
+            std::clamp<uint32_t>(height, capabilities.minImageExtent.height, capabilities.maxImageExtent.height)
+        };
     }
 
     VkFormat* GetSwapchainImageFormat() { return &g_swapchainImageFormat; }
     
     VkFormat GetDepthImageFormat() { return g_depthImageFormat; }
+
+    std::vector<VkImage>& GetSwapchainImages() { return g_swapchainImages; }
 }
