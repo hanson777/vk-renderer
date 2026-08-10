@@ -1,23 +1,22 @@
 #pragma once
 #include "Render/vk_common.h"
 #include <vector>
-#include <cstdint>
 
 namespace vk_swapchain {
 
-    VkSwapchainKHR g_swapchain;
+    extern VkSwapchainKHR g_swapchain;
     extern bool g_recreateSwapchain;
 
-    VkFormat g_swapchainImageFormat;
-    VkExtent2D g_swapchainExtent;
+    extern VkFormat g_swapchainImageFormat;
+    extern VkExtent2D g_swapchainExtent;
 
-    std::vector<VkImage> g_swapchainImages;
-    std::vector<VkImageView> g_swapchainImageViews;
+    extern std::vector<VkImage> g_swapchainImages;
+    extern std::vector<VkImageView> g_swapchainImageViews;
 
-    VkImage g_depthImage;
-    VkImageView g_depthImageView;
-    VkFormat g_depthImageFormat;
-    VmaAllocation g_depthImageAllocation;
+    extern VkImage g_depthImage;
+    extern VkImageView g_depthImageView;
+    extern VkFormat g_depthImageFormat;
+    extern VmaAllocation g_depthImageAllocation;
 
     bool Init();
     void Shutdown();

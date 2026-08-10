@@ -7,11 +7,18 @@
 #include <string>
 #include <iostream>
 #include <limits>
+#include <fstream>
+#include <sstream>
 
-namespace shader {
+namespace vk_shader {
 
     Slang::ComPtr<slang::IGlobalSession> g_slangGlobalSession;
     Slang::ComPtr<slang::ISession> g_slangSession;
+
+    bool Init() {
+        if (!InitSlangSession()) return false;
+        return true;
+    }
 
     bool InitSlangSession() {
         if (SLANG_FAILED(slang::createGlobalSession(g_slangGlobalSession.writeRef()))) {
@@ -60,7 +67,7 @@ VkShader::VkShader(const std::string& filename, const std::string& entryPointNam
 
 void VkShader::LoadModule(const std::string& filename, const std::string& entryPointName) {
     Slang::ComPtr<slang::IBlob> diagnostics;
-    Slang::ComPtr<slang::IModule> slangModule(shader::g_slangSession->loadModule(filename.c_str(), diagnostics.writeRef()));
+    Slang::ComPtr<slang::IModule> slangModule(vk_shader::g_slangSession->loadModule(filename.c_str(), diagnostics.writeRef()));
     showDiagnostics(diagnostics);
     if (slangModule == nullptr) {
         std::cerr << "[ERROR::VK_SHADER] failed to load slang module\n";
@@ -77,7 +84,7 @@ void VkShader::LoadModule(const std::string& filename, const std::string& entryP
 
     std::array<slang::IComponentType*, 2> components = { slangModule, entryPoint };
     Slang::ComPtr<slang::IComponentType> program;
-    result = shader::g_slangSession->createCompositeComponentType(components.data(), components.size(), program.writeRef(), diagnostics.writeRef());
+    result = vk_shader::g_slangSession->createCompositeComponentType(components.data(), components.size(), program.writeRef(), diagnostics.writeRef());
     showDiagnostics(diagnostics);
     if (SLANG_FAILED(result)) {
         std::cerr << "[ERROR::VK_SHADER] failed to create composite component type\n";
@@ -94,16 +101,16 @@ void VkShader::LoadModule(const std::string& filename, const std::string& entryP
 
     int entryPointIndex = 0;
     int targetIndex = 0;
-    Slang::ComPtr<slang::IBlob> spirv;
-    result = linkedProgram->getEntryPointCode(entryPointIndex, targetIndex, spirv.writeRef(), diagnostics.writeRef());
+    result = linkedProgram->getEntryPointCode(entryPointIndex, targetIndex, m_spirv.writeRef(), diagnostics.writeRef());
     showDiagnostics(diagnostics);
     if (SLANG_FAILED(result)) {
         std::cerr << "[ERROR::VK_SHADER] failed to get entry point code\n";
         return;
     }
 
-    m_moduleCreateInfo.codeSize = spirv->getBufferSize();
-    m_moduleCreateInfo.pCode = static_cast<const uint32_t*>(spirv->getBufferPointer());
+    m_moduleCreateInfo.codeSize = m_spirv->getBufferSize();
+    m_moduleCreateInfo.pCode = static_cast<const uint32_t*>(m_spirv->getBufferPointer());
+    std::cout << "Shader module successfully read for file " << filename << '\n';
 }
 
 static void showDiagnostics(Slang::ComPtr<slang::IBlob>& diagnostics) {

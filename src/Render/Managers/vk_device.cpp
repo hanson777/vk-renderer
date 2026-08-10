@@ -147,6 +147,15 @@ namespace vk_device {
 			return false;
         }
 
+		bool supportsShaderDrawParams = std::find_if(availableExtensions.begin(), availableExtensions.end(), [](const auto& prop) { return strcmp(prop.extensionName, "VK_KHR_shader_draw_parameters") == 0; }) != availableExtensions.end();
+		if (supportsShaderDrawParams) {
+			deviceExtensions.push_back("VK_KHR_shader_draw_parameters");
+		}
+		else {
+			std::cerr << "[ERROR::VK_DEVICE] device does not support shader draw parameters extension\n";
+			return false;
+		}
+
         #ifdef __APPLE__
             bool supportsPortability = std::find_if(availableExtensions.begin(), availableExtensions.end(), [](const auto& prop) { return strcmp(prop.extensionName, "VK_KHR_portability_subset") == 0; }) != availableExtensions.end();
             if (supportsPortability) { deviceExtensions.push_back("VK_KHR_portability_subset"); }

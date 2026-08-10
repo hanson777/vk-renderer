@@ -1,5 +1,6 @@
 #include "Core/Window.h"
 #include "Render/vk_context.h"
+#include "Render/vk_render.h"
 #include <iostream>
 
 int main() {
@@ -15,6 +16,7 @@ int main() {
 
     while (!Window::ShouldClose()) {
         Window::BeginFrame();
+        vk_render::Render();
     }
 
     vk_context::Shutdown();

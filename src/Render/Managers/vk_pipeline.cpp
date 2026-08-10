@@ -12,28 +12,34 @@ namespace vk_pipeline {
 	VkPipelineLayout g_pipelineLayout = VK_NULL_HANDLE;
 	VkPipeline g_pipeline = VK_NULL_HANDLE;
 	std::vector<VkShader> g_shaders;
+	std::vector<VkPipelineShaderStageCreateInfo> g_shaderStageCreateInfos;
 
 	bool Init() {
+		VkShader vert("Shaders/triangle.slang", "vertMain", VK_SHADER_STAGE_VERTEX_BIT);
+		VkShader frag("Shaders/triangle.slang", "fragMain", VK_SHADER_STAGE_FRAGMENT_BIT);
+		g_shaders = { vert, frag };
+
 		VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo{
 			.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
 			.setLayoutCount = 0,
 			.pushConstantRangeCount = 0,
 		};
 
-		const VkDevice device = vk_device::getDevice();
+		const VkDevice device = vk_device::GetDevice();
 		if (vkCreatePipelineLayout(device, &pipelineLayoutCreateInfo, nullptr, &g_pipelineLayout) != VK_SUCCESS) {
 			std::cerr << "[ERROR::PIPELINE_MANAGER] failed to create pipeline layout\n";
 			return false;
 		}
 		
-		std::vector<VkPipelineShaderStageCreateInfo> shaderStageCreateInfos(g_shaders.size(), { .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO });
-		for (const VkShader& shader : g_shaders) {
+		for (int i = 0; i < g_shaders.size(); i++) {
+			std::cout << "shader stage: " << g_shaders[i].m_stage << '\n';
 			VkPipelineShaderStageCreateInfo ssCreateInfo{
-				.pNext = &shader.m_moduleCreateInfo,
-				.stage = shader.m_stage,
-				.pName = shader.m_entryPoint.c_str(),
+				.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+				.pNext = &g_shaders[i].m_moduleCreateInfo,
+				.stage = g_shaders[i].m_stage,
+				.pName = g_shaders[i].m_spirvEntryPoint,
 			};
-			shaderStageCreateInfos.push_back(ssCreateInfo);
+			g_shaderStageCreateInfos.push_back(ssCreateInfo);
 		}
 
 		VkPipelineVertexInputStateCreateInfo vertexInputCreateInfo{
@@ -102,8 +108,8 @@ namespace vk_pipeline {
 		VkGraphicsPipelineCreateInfo pipelineCreateInfo{
 			.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
 			.pNext = &renderingCreateInfo,
-			.stageCount = static_cast<uint32_t>(shaderStageCreateInfos.size()),
-			.pStages = shaderStageCreateInfos.data(),
+			.stageCount = static_cast<uint32_t>(g_shaderStageCreateInfos.size()),
+			.pStages = g_shaderStageCreateInfos.data(),
 			.pVertexInputState = &vertexInputCreateInfo,
 			.pInputAssemblyState = &inputAssemblyCreateInfo,
 			.pViewportState = &viewportCreateInfo,
@@ -135,7 +141,7 @@ namespace vk_pipeline {
 		}
 	}
 
-	void AddShader(const VkShader& shader) {
+	void AddShader(const VkShader shader) {
 		g_shaders.push_back(shader);
 	}
 }

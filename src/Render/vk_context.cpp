@@ -6,6 +6,7 @@
 #include "Managers/vk_swapchain.h"
 #include "Managers/vk_pipeline.h"
 #include "Managers/vk_sync.h"
+#include "vk_shader.h"
 #include <iostream>
 
 namespace vk_context {
@@ -34,6 +35,11 @@ namespace vk_context {
 
         if (!vk_swapchain::Init()) {
             std::cerr << "[ERROR::VK_CONTEXT] vk_swapchain::Init() failed\n";
+            return false;
+        }
+
+        if (!vk_shader::Init()) {
+            std::cerr << "[ERROR::VK_CONTEXT] vk_shader::InitSlangSession() failed\n";
             return false;
         }
 
