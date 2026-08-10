@@ -40,5 +40,5 @@ namespace vk_memory {
         }
     }
 
-    VmaAllocator GetAllocator() { return g_allocator; }
+    const VmaAllocator& GetAllocator() { return g_allocator; }
 }

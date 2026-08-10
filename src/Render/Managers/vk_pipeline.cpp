@@ -124,6 +124,17 @@ namespace vk_pipeline {
 		return true;
 	}
 
+	void Shutdown() {
+		const VkDevice device = vk_device::GetDevice();
+		if (g_pipelineLayout != VK_NULL_HANDLE) {
+			vkDestroyPipelineLayout(device, g_pipelineLayout, nullptr);
+		}
+
+		if (g_pipeline != VK_NULL_HANDLE) {
+			vkDestroyPipeline(device, g_pipeline, nullptr);
+		}
+	}
+
 	void AddShader(const VkShader& shader) {
 		g_shaders.push_back(shader);
 	}

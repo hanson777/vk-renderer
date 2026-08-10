@@ -17,5 +17,7 @@ int main() {
         Window::BeginFrame();
     }
 
+    vk_context::Shutdown();
+
     return 0;
 }

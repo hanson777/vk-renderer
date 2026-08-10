@@ -182,11 +182,15 @@ namespace vk_device {
 		return g_physicalDevice;
 	}
 
+	const VkDevice& GetDevice() {
+		return g_device;
+	}
+
 	VkQueue GetQueue() {
 		return g_graphicsQueue;
 	}
 
-	VkDevice GetDevice() {
-		return g_device;
+	uint32_t GetQueueIndex() {
+		return g_graphicsQueueIndex;
 	}
 }

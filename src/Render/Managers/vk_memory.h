@@ -4,5 +4,5 @@
 namespace vk_memory {
 	bool Init();
 	void Shutdown();
-	VmaAllocator GetAllocator();
+	const VmaAllocator& GetAllocator();
 }
