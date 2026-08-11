@@ -101,8 +101,8 @@ namespace vk_pipeline {
 		VkPipelineRenderingCreateInfo renderingCreateInfo{
 			.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
 			.colorAttachmentCount = 1,
-			.pColorAttachmentFormats = vk_swapchain::GetSwapchainImageFormat(),
-			.depthAttachmentFormat = vk_swapchain::GetDepthImageFormat(),
+			.pColorAttachmentFormats = &vk_swapchain::g_swapchainImageFormat,
+			.depthAttachmentFormat = vk_swapchain::g_depthImageFormat,
 		};
 
 		VkGraphicsPipelineCreateInfo pipelineCreateInfo{

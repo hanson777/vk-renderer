@@ -34,8 +34,6 @@ namespace vk_swapchain {
 
     bool Init() {
         if (!CreateSwapchain()) return false;
-        if (!getSwapchainImages()) return false;
-        if (!getDepthImages()) return false;
         return true;
     }
 
@@ -77,6 +75,9 @@ namespace vk_swapchain {
             std::cerr << "[ERROR::SWAPCHAIN_MANAGER] failed to create swapchain\n";
             return false;
         }
+
+        if (!getSwapchainImages()) return false;
+        if (!getDepthImages()) return false;
 
         return true;
     }
@@ -234,6 +235,4 @@ namespace vk_swapchain {
     VkImage& GetDepthImage() { return g_depthImage; }
     
     VkFormat GetDepthImageFormat() { return g_depthImageFormat; }
-
-    std::vector<VkImage>& GetSwapchainImages() { return g_swapchainImages; }
 }

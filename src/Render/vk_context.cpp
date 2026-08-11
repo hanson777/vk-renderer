@@ -59,8 +59,10 @@ namespace vk_context {
     void Shutdown() {
         vkDeviceWaitIdle(vk_device::GetDevice());
         vk_sync::Shutdown();
+        vk_pipeline::Shutdown();
         vk_swapchain::Shutdown();
         vk_memory::Shutdown();
+        vk_device::Shutdown();
         vk_instance::Shutdown();
     }
 }

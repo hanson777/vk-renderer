@@ -43,7 +43,7 @@ namespace vk_sync {
 		}
 
 		// semaphores for swapchain images
-		g_renderCompleteSemaphores.resize(vk_swapchain::GetSwapchainImages().size());
+		g_renderCompleteSemaphores.resize(vk_swapchain::g_swapchainImages.size());
 		for (VkSemaphore& semaphore : g_renderCompleteSemaphores) {
 			if (vkCreateSemaphore(device, &binarySemaphoreCreateInfo, nullptr, &semaphore) != VK_SUCCESS) {
 				std::cerr << "[ERROR::SYNC_MANAGER] failed to create render complete semaphore\n";

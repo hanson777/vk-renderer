@@ -21,10 +21,4 @@ namespace vk_swapchain {
     bool Init();
     void Shutdown();
     bool CreateSwapchain();
-    
-    VkSwapchainKHR GetSwapchain();
-    VkFormat* GetSwapchainImageFormat();
-    VkImage& GetDepthImage();
-    VkFormat GetDepthImageFormat();
-    std::vector<VkImage>& GetSwapchainImages();
 }

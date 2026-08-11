@@ -6,6 +6,7 @@
 #include "Managers/vk_sync.h"
 #include <cstdint>
 #include <vector>
+#include <iostream>
 
 namespace vk_render {
 
@@ -43,7 +44,7 @@ namespace vk_render {
 		// request next image
 		VkSemaphore imageAcquiredSemaphore = vk_sync::g_imageAcquiredSemaphores[currentFrameIdx];
 		uint32_t imageIndex = 0;
-		VkResult result = vkAcquireNextImageKHR(device, vk_swapchain::GetSwapchain(), UINT64_MAX, imageAcquiredSemaphore, VK_NULL_HANDLE, &imageIndex);
+		VkResult result = vkAcquireNextImageKHR(device, vk_swapchain::g_swapchain, UINT64_MAX, imageAcquiredSemaphore, VK_NULL_HANDLE, &imageIndex);
 		if (result == VK_ERROR_OUT_OF_DATE_KHR) {
 			vk_swapchain::g_recreateSwapchain = true;
 			return;
@@ -71,7 +72,7 @@ namespace vk_render {
 				.dstAccessMask = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT, 
 				.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
 				.newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-				.image = vk_swapchain::GetSwapchainImages()[imageIndex],
+				.image = vk_swapchain::g_swapchainImages[imageIndex],
 				.subresourceRange{
 					.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
 					.baseMipLevel = 0,
@@ -89,9 +90,9 @@ namespace vk_render {
 				.dstAccessMask = VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
 				.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
 				.newLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL,
-				.image = vk_swapchain::GetDepthImage(),
+				.image = vk_swapchain::g_depthImage,
 				.subresourceRange{
-					.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT,
+					.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT,
 					.baseMipLevel = 0,
 					.levelCount = 1,
 					.baseArrayLayer = 0,
@@ -153,6 +154,7 @@ namespace vk_render {
 
 			vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vk_pipeline::g_pipeline);
 			vkCmdDraw(cmdBuffer, 3, 1, 0, 0);
+			std::cout << "Calling vkCmdDraw()...\n";
 		}
 		vkCmdEndRendering(cmdBuffer);
 

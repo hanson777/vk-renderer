@@ -25,6 +25,12 @@ namespace vk_device {
 		return true;
 	}
 
+	void Shutdown() {
+		if (g_device != VK_NULL_HANDLE) {
+			vkDestroyDevice(g_device, nullptr);
+		}
+	}
+
 	static bool findPhysicalDevice() {
         VkInstance instance = vk_instance::GetInstance();
 
