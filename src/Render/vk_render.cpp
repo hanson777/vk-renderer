@@ -6,7 +6,6 @@
 #include "Managers/vk_sync.h"
 #include <cstdint>
 #include <vector>
-#include <iostream>
 
 namespace vk_render {
 
@@ -113,7 +112,7 @@ namespace vk_render {
 			.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
 			.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
 			.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
-			.clearValue{.color{0.f, 0.f, 0.5f, 1}},
+			.clearValue{.color{0.f, 0.f, 0.f, 1}},
 		};
 		VkRenderingAttachmentInfo depthAttachmentInfo{
 			.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
@@ -154,7 +153,6 @@ namespace vk_render {
 
 			vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vk_pipeline::g_pipeline);
 			vkCmdDraw(cmdBuffer, 3, 1, 0, 0);
-			std::cout << "Calling vkCmdDraw()...\n";
 		}
 		vkCmdEndRendering(cmdBuffer);
 

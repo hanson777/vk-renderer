@@ -1,7 +1,7 @@
 static float2 positions[3] = float2[](
-    float2(0.0, -0.5),
-    float2(0.5, 0.5),
-    float2(-0.5, 0.5)
+    float2(0.0, -0.5), // 1. Top
+    float2(-0.5, 0.5), // 2. Bottom Left
+    float2(0.5, 0.5)   // 3. Bottom Right
 );
 
 static float3 colors[3] = float3[](
