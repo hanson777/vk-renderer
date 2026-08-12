@@ -1,7 +1,7 @@
 #include "vk_pipeline.h"
 #include "Render/vk_common.h"
 #include "vk_device.h"
-#include "Render/vk_shader.h"
+#include "Render/shader.h"
 #include "vk_swapchain.h"
 #include <iostream>
 #include <vector>
@@ -9,24 +9,20 @@
 
 namespace vk_pipeline {
 	
-	VkPipelineLayout g_pipelineLayout = VK_NULL_HANDLE;
+	VkPipelineLayout g_pipeline_layout = VK_NULL_HANDLE;
 	VkPipeline g_pipeline = VK_NULL_HANDLE;
-	std::vector<VkShader> g_shaders;
-	std::vector<VkPipelineShaderStageCreateInfo> g_shaderStageCreateInfos;
+	std::vector<Shader> g_shaders;
+	std::vector<VkPipelineShaderStageCreateInfo> g_shader_stage_create_infos;
 
 	bool Init() {
-		VkShader vert("Shaders/triangle.slang", "vertMain", VK_SHADER_STAGE_VERTEX_BIT);
-		VkShader frag("Shaders/triangle.slang", "fragMain", VK_SHADER_STAGE_FRAGMENT_BIT);
-		g_shaders = { vert, frag };
-
 		VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo{
 			.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
 			.setLayoutCount = 0,
 			.pushConstantRangeCount = 0,
 		};
 
-		const VkDevice device = vk_device::GetDevice();
-		if (vkCreatePipelineLayout(device, &pipelineLayoutCreateInfo, nullptr, &g_pipelineLayout) != VK_SUCCESS) {
+		const VkDevice& device = vk_device::GetDevice();
+		if (vkCreatePipelineLayout(device, &pipelineLayoutCreateInfo, nullptr, &g_pipeline_layout) != VK_SUCCESS) {
 			std::cerr << "[ERROR::PIPELINE_MANAGER] failed to create pipeline layout\n";
 			return false;
 		}
@@ -35,11 +31,11 @@ namespace vk_pipeline {
 			std::cout << "shader stage: " << g_shaders[i].m_stage << '\n';
 			VkPipelineShaderStageCreateInfo ssCreateInfo{
 				.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-				.pNext = &g_shaders[i].m_moduleCreateInfo,
+				.pNext = &g_shaders[i].m_module_create_info,
 				.stage = g_shaders[i].m_stage,
-				.pName = g_shaders[i].m_spirvEntryPoint,
+				.pName = g_shaders[i].m_spirv_entry_point,
 			};
-			g_shaderStageCreateInfos.push_back(ssCreateInfo);
+			g_shader_stage_create_infos.push_back(ssCreateInfo);
 		}
 
 		VkPipelineVertexInputStateCreateInfo vertexInputCreateInfo{
@@ -101,15 +97,15 @@ namespace vk_pipeline {
 		VkPipelineRenderingCreateInfo renderingCreateInfo{
 			.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
 			.colorAttachmentCount = 1,
-			.pColorAttachmentFormats = &vk_swapchain::g_swapchainImageFormat,
-			.depthAttachmentFormat = vk_swapchain::g_depthImageFormat,
+			.pColorAttachmentFormats = &vk_swapchain::g_swapchain_image_format,
+			.depthAttachmentFormat = vk_swapchain::g_depth_image_format,
 		};
 
 		VkGraphicsPipelineCreateInfo pipelineCreateInfo{
 			.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
 			.pNext = &renderingCreateInfo,
-			.stageCount = static_cast<uint32_t>(g_shaderStageCreateInfos.size()),
-			.pStages = g_shaderStageCreateInfos.data(),
+			.stageCount = static_cast<uint32_t>(g_shader_stage_create_infos.size()),
+			.pStages = g_shader_stage_create_infos.data(),
 			.pVertexInputState = &vertexInputCreateInfo,
 			.pInputAssemblyState = &inputAssemblyCreateInfo,
 			.pViewportState = &viewportCreateInfo,
@@ -118,7 +114,7 @@ namespace vk_pipeline {
 			.pDepthStencilState = &depthStencilCreateInfo,
 			.pColorBlendState = &colorBlendStateCreateInfo,
 			.pDynamicState = &dynamicStateCreateInfo,
-			.layout = g_pipelineLayout,
+			.layout = g_pipeline_layout,
 			.renderPass = VK_NULL_HANDLE,
 		};
 
@@ -132,8 +128,8 @@ namespace vk_pipeline {
 
 	void Shutdown() {
 		const VkDevice device = vk_device::GetDevice();
-		if (g_pipelineLayout != VK_NULL_HANDLE) {
-			vkDestroyPipelineLayout(device, g_pipelineLayout, nullptr);
+		if (g_pipeline_layout != VK_NULL_HANDLE) {
+			vkDestroyPipelineLayout(device, g_pipeline_layout, nullptr);
 		}
 
 		if (g_pipeline != VK_NULL_HANDLE) {
@@ -141,7 +137,7 @@ namespace vk_pipeline {
 		}
 	}
 
-	void AddShader(const VkShader shader) {
-		g_shaders.push_back(shader);
+	void AddShader(const std::string& filepath, const std::string& entryPoint, const ShaderStage stage) {
+		g_shaders.emplace_back(filepath, entryPoint, stage);
 	}
 }

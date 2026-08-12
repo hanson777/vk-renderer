@@ -5,7 +5,7 @@
 namespace vk_device {
 	bool Init();
 	void Shutdown();
-	VkPhysicalDevice GetPhysicalDevice();
+	const VkPhysicalDevice& GetPhysicalDevice();
 	const VkDevice& GetDevice();
 	VkQueue GetQueue();
 	uint32_t GetQueueIndex();

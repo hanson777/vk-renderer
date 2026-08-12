@@ -1,7 +1,9 @@
 #pragma once
 #include "Render/vk_common.h"
+#include "Render/shader.h"
+#include <string>
 
-struct VkShader;
+struct Shader;
 
 namespace vk_pipeline {
 
@@ -9,5 +11,5 @@ namespace vk_pipeline {
 
 	bool Init();
 	void Shutdown();
-	void AddShader(const VkShader shader);
+	void AddShader(const std::string& filepath, const std::string& entryPoint, const ShaderStage stage);
 }

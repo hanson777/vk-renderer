@@ -11,7 +11,7 @@ namespace vk_instance {
 	constexpr uint32_t VK_VERSION = VK_API_VERSION_1_4;
 
     VkInstance g_instance = VK_NULL_HANDLE; 
-    VkDebugUtilsMessengerEXT g_debugMessenger = VK_NULL_HANDLE;
+    VkDebugUtilsMessengerEXT g_debug_messenger = VK_NULL_HANDLE;
     VkSurfaceKHR g_surface = VK_NULL_HANDLE;
     
     bool g_validationEnabled = true;
@@ -99,7 +99,7 @@ namespace vk_instance {
 
 		volkLoadInstance(g_instance);
 
-        if (vkCreateDebugUtilsMessengerEXT(g_instance, &debugCreateInfo, nullptr, &g_debugMessenger) != VK_SUCCESS) {
+        if (vkCreateDebugUtilsMessengerEXT(g_instance, &debugCreateInfo, nullptr, &g_debug_messenger) != VK_SUCCESS) {
             std::cerr << "[ERROR::INSTANCE_MANAGER] failed to set up debug messenger\n";
             return false;
         }
@@ -113,8 +113,8 @@ namespace vk_instance {
     }
     
     void Shutdown() {
-        if (g_validationEnabled && g_debugMessenger != VK_NULL_HANDLE) {
-            vkDestroyDebugUtilsMessengerEXT(g_instance, g_debugMessenger, nullptr);
+        if (g_validationEnabled && g_debug_messenger != VK_NULL_HANDLE) {
+            vkDestroyDebugUtilsMessengerEXT(g_instance, g_debug_messenger, nullptr);
         }
         if (g_surface != VK_NULL_HANDLE) vkDestroySurfaceKHR(g_instance, g_surface, nullptr);
         if (g_instance != VK_NULL_HANDLE) vkDestroyInstance(g_instance, nullptr);

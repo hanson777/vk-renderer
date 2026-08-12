@@ -8,11 +8,11 @@
 
 namespace vk_sync {
 
-	std::vector<VkSemaphore> g_submitSemaphores;
-	std::vector<VkSemaphore> g_imageAcquiredSemaphores;
-	VkSemaphore g_timelineSemaphore = VK_NULL_HANDLE;
-	std::vector<VkCommandPool> g_commandPools;
-	std::vector<VkCommandBuffer> g_commandBuffers;
+	std::vector<VkSemaphore> g_submit_semaphores;
+	std::vector<VkSemaphore> g_acquire_semaphores;
+	VkSemaphore g_timeline_semaphore = VK_NULL_HANDLE;
+	std::vector<VkCommandPool> g_command_pools;
+	std::vector<VkCommandBuffer> g_command_buffers;
 
 	bool Init() {
 		const VkDevice& device = vk_device::GetDevice();
@@ -28,14 +28,14 @@ namespace vk_sync {
 		};
 		VkSemaphoreCreateInfo binarySemaphoreCreateInfo{ .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO };
 
-		if (vkCreateSemaphore(device, &timelineSemaphoreCreateInfo, nullptr, &g_timelineSemaphore) != VK_SUCCESS) {
+		if (vkCreateSemaphore(device, &timelineSemaphoreCreateInfo, nullptr, &g_timeline_semaphore) != VK_SUCCESS) {
 			std::cerr << "[ERROR::SYNC_MANAGER] failed to create timeline semaphore\n";
 			return false;
 		};
 
 		// semaphores for image acquisition
-		g_imageAcquiredSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
-		for (VkSemaphore& semaphore : g_imageAcquiredSemaphores) {
+		g_acquire_semaphores.resize(MAX_FRAMES_IN_FLIGHT);
+		for (VkSemaphore& semaphore : g_acquire_semaphores) {
 			if (vkCreateSemaphore(device, &binarySemaphoreCreateInfo, nullptr, &semaphore) != VK_SUCCESS) {
 				std::cerr << "[ERROR::SYNC_MANAGER] failed to create image acquired semaphore\n";
 				return false;
@@ -43,33 +43,33 @@ namespace vk_sync {
 		}
 
 		// semaphores for swapchain images
-		g_submitSemaphores.resize(vk_swapchain::g_swapchainImages.size());
-		for (VkSemaphore& semaphore : g_submitSemaphores) {
+		g_submit_semaphores.resize(vk_swapchain::g_swapchain_images.size());
+		for (VkSemaphore& semaphore : g_submit_semaphores) {
 			if (vkCreateSemaphore(device, &binarySemaphoreCreateInfo, nullptr, &semaphore) != VK_SUCCESS) {
 				std::cerr << "[ERROR::SYNC_MANAGER] failed to create render complete semaphore\n";
 				return false;
 			}
 		}
 
-		g_commandPools.resize(MAX_FRAMES_IN_FLIGHT);
-		g_commandBuffers.resize(MAX_FRAMES_IN_FLIGHT);
+		g_command_pools.resize(MAX_FRAMES_IN_FLIGHT);
+		g_command_buffers.resize(MAX_FRAMES_IN_FLIGHT);
 		VkCommandPoolCreateInfo cmdPoolCreateInfo{
 			.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
 			.queueFamilyIndex = vk_device::GetQueueIndex(),
 		};
 		for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-			if (vkCreateCommandPool(device, &cmdPoolCreateInfo, nullptr, &g_commandPools[i]) != VK_SUCCESS) {
+			if (vkCreateCommandPool(device, &cmdPoolCreateInfo, nullptr, &g_command_pools[i]) != VK_SUCCESS) {
 				std::cerr << "[ERROR::SYNC_MANAGER] failed to create command pool\n";
 				return false;
 			}
 
 			VkCommandBufferAllocateInfo cmdAllocateInfo{
 				.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-				.commandPool = g_commandPools[i],
+				.commandPool = g_command_pools[i],
 				.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
 				.commandBufferCount = 1,
 			};
-			if (vkAllocateCommandBuffers(device, &cmdAllocateInfo, &g_commandBuffers[i]) != VK_SUCCESS) {
+			if (vkAllocateCommandBuffers(device, &cmdAllocateInfo, &g_command_buffers[i]) != VK_SUCCESS) {
 				std::cerr << "[ERROR::SYNC_MANAGER] failed to create command buffer\n";
 				return false;
 			}
@@ -80,19 +80,19 @@ namespace vk_sync {
 
 	void Shutdown() {
 		const VkDevice device = vk_device::GetDevice();
-		if (g_timelineSemaphore != VK_NULL_HANDLE) {
-			vkDestroySemaphore(device, g_timelineSemaphore, nullptr);
+		if (g_timeline_semaphore != VK_NULL_HANDLE) {
+			vkDestroySemaphore(device, g_timeline_semaphore, nullptr);
 		}
 
-		for (VkSemaphore& semaphore : g_submitSemaphores) {
+		for (VkSemaphore& semaphore : g_submit_semaphores) {
 			if (semaphore != VK_NULL_HANDLE) vkDestroySemaphore(device, semaphore, nullptr);
 		}
 
-		for (VkSemaphore& semaphore : g_imageAcquiredSemaphores) {
+		for (VkSemaphore& semaphore : g_acquire_semaphores) {
 			if (semaphore != VK_NULL_HANDLE) vkDestroySemaphore(device, semaphore, nullptr);
 		}
 
-		for (VkCommandPool& cmdPool : g_commandPools) {
+		for (VkCommandPool& cmdPool : g_command_pools) {
 			if (cmdPool != VK_NULL_HANDLE) vkDestroyCommandPool(device, cmdPool, nullptr);
 		}
 	}

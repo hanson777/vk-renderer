@@ -1,52 +1,53 @@
-#include "vk_render.h"
+#include "renderer.h"
 #include "vk_common.h"
 #include "Managers/vk_device.h"
 #include "Managers/vk_swapchain.h"
 #include "Managers/vk_pipeline.h"
 #include "Managers/vk_sync.h"
+#include "shader.h"
 #include <cstdint>
 #include <vector>
 
-namespace vk_render {
+namespace Renderer {
 
-	uint32_t g_frameIndex = 0;
-	uint64_t g_nextSignalValue = vk_sync::MAX_FRAMES_IN_FLIGHT + 1;
+	uint32_t g_frame_count = 0;
+	uint64_t g_next_signal_value = vk_sync::MAX_FRAMES_IN_FLIGHT + 1;
 
 	void Render() {
 		const VkDevice& device = vk_device::GetDevice();
 
-		if (vk_swapchain::g_recreateSwapchain) {
+		if (vk_swapchain::g_recreate_swapchain) {
 			vkDeviceWaitIdle(device);
 			vk_swapchain::RecreateSwapchain();
-			vk_swapchain::g_recreateSwapchain = false;
+			vk_swapchain::g_recreate_swapchain = false;
 		}
 
-		const uint32_t frame_index = g_frameIndex % vk_sync::MAX_FRAMES_IN_FLIGHT;
-		const uint64_t signal_value = g_nextSignalValue;
+		const uint32_t frame_index = g_frame_count % vk_sync::MAX_FRAMES_IN_FLIGHT;
+		const uint64_t signal_value = g_next_signal_value;
 		const uint64_t wait_value = signal_value - vk_sync::MAX_FRAMES_IN_FLIGHT;
 
 		// wait for semaphore (replaces wait for fence)
 		VkSemaphoreWaitInfo wait_info{
 			.sType = VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO,
 			.semaphoreCount = 1,
-			.pSemaphores = &vk_sync::g_timelineSemaphore,
+			.pSemaphores = &vk_sync::g_timeline_semaphore,
 			.pValues = &wait_value,
 		};
 		vkWaitSemaphores(device, &wait_info, UINT64_MAX);
 
-		VkCommandPool command_pool = vk_sync::g_commandPools[frame_index];
+		VkCommandPool command_pool = vk_sync::g_command_pools[frame_index];
 		vkResetCommandPool(device, command_pool, 0);
 
 		// request next image
 		uint32_t image_index = 0;
-		VkSemaphore acquire_semaphore = vk_sync::g_imageAcquiredSemaphores[frame_index];
+		VkSemaphore acquire_semaphore = vk_sync::g_acquire_semaphores[frame_index];
 		VkResult result = vkAcquireNextImageKHR(device, vk_swapchain::g_swapchain, UINT64_MAX, acquire_semaphore, VK_NULL_HANDLE, &image_index);
 		if (result == VK_ERROR_OUT_OF_DATE_KHR) {
-			vk_swapchain::g_recreateSwapchain = true;
+			vk_swapchain::g_recreate_swapchain = true;
 			return;
 		}
 		else if (result == VK_SUBOPTIMAL_KHR) {
-			vk_swapchain::g_recreateSwapchain = true;
+			vk_swapchain::g_recreate_swapchain = true;
 		}
 
 		// begin recording commands
@@ -54,7 +55,7 @@ namespace vk_render {
 			.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
 			.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT
 		};
-		VkCommandBuffer& command_buffer = vk_sync::g_commandBuffers[frame_index];
+		VkCommandBuffer& command_buffer = vk_sync::g_command_buffers[frame_index];
 		vkBeginCommandBuffer(command_buffer, &buffer_begin_info);
 
 		// transition image layout
@@ -68,7 +69,7 @@ namespace vk_render {
 				.dstAccessMask = VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT, 
 				.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
 				.newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-				.image = vk_swapchain::g_swapchainImages[image_index],
+				.image = vk_swapchain::g_swapchain_images[image_index],
 				.subresourceRange{
 					.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
 					.baseMipLevel = 0,
@@ -86,7 +87,7 @@ namespace vk_render {
 				.dstAccessMask = VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
 				.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
 				.newLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL,
-				.image = vk_swapchain::g_depthImage,
+				.image = vk_swapchain::g_depth_image,
 				.subresourceRange{
 					.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT,
 					.baseMipLevel = 0,
@@ -101,11 +102,11 @@ namespace vk_render {
 			.imageMemoryBarrierCount = static_cast<uint32_t>(layout_barriers.size()),
 			.pImageMemoryBarriers = layout_barriers.data(),
 		};
-		vkCmdPipelineBarrier2(vk_sync::g_commandBuffers[frame_index], &layout_dep_info);
+		vkCmdPipelineBarrier2(vk_sync::g_command_buffers[frame_index], &layout_dep_info);
 
 		VkRenderingAttachmentInfo color_attachment_info{
 			.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
-			.imageView = vk_swapchain::g_swapchainImageViews[image_index],
+			.imageView = vk_swapchain::g_swapchain_image_views[image_index],
 			.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
 			.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
 			.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
@@ -113,7 +114,7 @@ namespace vk_render {
 		};
 		VkRenderingAttachmentInfo depth_attachment_info{
 			.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
-			.imageView = vk_swapchain::g_depthImageView,
+			.imageView = vk_swapchain::g_depth_image_view,
 			.imageLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
 			.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
 			.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
@@ -124,7 +125,7 @@ namespace vk_render {
 			.sType = VK_STRUCTURE_TYPE_RENDERING_INFO,
 			.renderArea{
 				.offset{.x = 0, .y = 0 },
-				.extent = vk_swapchain::g_swapchainExtent,
+				.extent = vk_swapchain::g_swapchain_extent,
 			},
 			.layerCount = 1,
 			.colorAttachmentCount = 1,
@@ -137,14 +138,14 @@ namespace vk_render {
 			VkViewport viewport{
 				.x = 0,
 				.y = 0,
-				.width = static_cast<float>(vk_swapchain::g_swapchainExtent.width),
-				.height = static_cast<float>(vk_swapchain::g_swapchainExtent.height),
+				.width = static_cast<float>(vk_swapchain::g_swapchain_extent.width),
+				.height = static_cast<float>(vk_swapchain::g_swapchain_extent.height),
 			};
 			vkCmdSetViewport(command_buffer, 0, 1, &viewport);
 
 			VkRect2D scissor{
 				.offset{.x = 0, .y = 0},
-				.extent = vk_swapchain::g_swapchainExtent,
+				.extent = vk_swapchain::g_swapchain_extent,
 			};
 			vkCmdSetScissor(command_buffer, 0, 1, &scissor);
 
@@ -161,7 +162,7 @@ namespace vk_render {
 			.dstAccessMask = VK_ACCESS_2_NONE,
 			.oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
 			.newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
-			.image = vk_swapchain::g_swapchainImages[image_index],
+			.image = vk_swapchain::g_swapchain_images[image_index],
 			.subresourceRange{
 				.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
 				.baseMipLevel = 0,
@@ -187,13 +188,13 @@ namespace vk_render {
 		std::vector<VkSemaphoreSubmitInfo> semaphore_signals{
 			{   // binary semaphore
 				.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,
-				.semaphore = vk_sync::g_submitSemaphores[image_index],
+				.semaphore = vk_sync::g_submit_semaphores[image_index],
 				.value = 0,
 				.stageMask = VK_PIPELINE_STAGE_2_ALL_GRAPHICS_BIT,
 			},
 			{   // timeline semaphore
 				.sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,
-				.semaphore = vk_sync::g_timelineSemaphore,
+				.semaphore = vk_sync::g_timeline_semaphore,
 				.value = signal_value,
 				.stageMask = VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT,
 			},
@@ -218,7 +219,7 @@ namespace vk_render {
 		VkPresentInfoKHR present_info{
 			.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
 			.waitSemaphoreCount = 1,
-			.pWaitSemaphores = &vk_sync::g_submitSemaphores[image_index],
+			.pWaitSemaphores = &vk_sync::g_submit_semaphores[image_index],
 			.swapchainCount = 1,
 			.pSwapchains = &vk_swapchain::g_swapchain,
 			.pImageIndices = &image_index,
@@ -227,7 +228,11 @@ namespace vk_render {
 
 		vkQueuePresentKHR(queue, &present_info);
 
-		g_frameIndex++;
-		g_nextSignalValue++;
+		g_frame_count++;
+		g_next_signal_value++;
+	}
+
+	void LoadShader(const std::string& filepath, const std::string& entryPoint, const ShaderStage stage) {
+		vk_pipeline::AddShader(filepath, entryPoint, stage);
 	}
 }

@@ -9,9 +9,9 @@
 
 namespace vk_device {
 
-	VkPhysicalDevice g_physicalDevice = VK_NULL_HANDLE;
-	uint32_t g_graphicsQueueIndex = std::numeric_limits<uint32_t>::max();
-	VkQueue g_graphicsQueue = VK_NULL_HANDLE;
+	VkPhysicalDevice g_physical_device = VK_NULL_HANDLE;
+	uint32_t g_graphics_queue_index = std::numeric_limits<uint32_t>::max();
+	VkQueue g_graphics_queue = VK_NULL_HANDLE;
 	VkDevice g_device = VK_NULL_HANDLE;
 
 	static bool findPhysicalDevice();
@@ -40,7 +40,7 @@ namespace vk_device {
 		vkEnumeratePhysicalDevices(instance, &physicalDeviceCount, physicalDevices.data());
 
 		if (physicalDeviceCount != 0) {
-			g_physicalDevice = physicalDevices[0];
+			g_physical_device = physicalDevices[0];
 		}
 		else {
 			std::cerr << "[ERROR::DEVICE_MANAGER] could not find any physical devices\n";
@@ -51,7 +51,7 @@ namespace vk_device {
 			VkPhysicalDeviceProperties properties{};
 			vkGetPhysicalDeviceProperties(physicalDevice, &properties);
 			if (properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) {
-				g_physicalDevice = physicalDevice;
+				g_physical_device = physicalDevice;
 				break;
 			}
 		}
@@ -60,17 +60,17 @@ namespace vk_device {
 
 	static bool findQueueFamilyIndex() {
 		uint32_t queueFamilyCount = 0;
-		vkGetPhysicalDeviceQueueFamilyProperties2(g_physicalDevice, &queueFamilyCount, nullptr);
+		vkGetPhysicalDeviceQueueFamilyProperties2(g_physical_device, &queueFamilyCount, nullptr);
 		std::vector<VkQueueFamilyProperties2> queueFamilyProperties(queueFamilyCount, { .sType = VK_STRUCTURE_TYPE_QUEUE_FAMILY_PROPERTIES_2 });
-		vkGetPhysicalDeviceQueueFamilyProperties2(g_physicalDevice, &queueFamilyCount, queueFamilyProperties.data());
+		vkGetPhysicalDeviceQueueFamilyProperties2(g_physical_device, &queueFamilyCount, queueFamilyProperties.data());
 
 		for (int i = 0; i < queueFamilyProperties.size(); i++) {
 			VkBool32 hasPresentSupport = VK_FALSE;
-			vkGetPhysicalDeviceSurfaceSupportKHR(g_physicalDevice, i, vk_instance::GetSurface(), &hasPresentSupport);
+			vkGetPhysicalDeviceSurfaceSupportKHR(g_physical_device, i, vk_instance::GetSurface(), &hasPresentSupport);
 
 			const auto& properties = queueFamilyProperties[i];
 			if (properties.queueFamilyProperties.queueFlags & VK_QUEUE_GRAPHICS_BIT && hasPresentSupport) {
-				g_graphicsQueueIndex = i;
+				g_graphics_queue_index = i;
 				return true;
 			}
 		}
@@ -105,7 +105,7 @@ namespace vk_device {
 			.pNext = &supportedFeatures11,
 		};
 
-		vkGetPhysicalDeviceFeatures2(g_physicalDevice, &supportedFeatures);
+		vkGetPhysicalDeviceFeatures2(g_physical_device, &supportedFeatures);
 		if (!supportedFeatures13.dynamicRendering  || !supportedFeatures13.synchronization2 || 
 			!supportedFeatures12.timelineSemaphore || !supportedFeatures12.separateDepthStencilLayouts ||
 			!supportedFeatures14.maintenance5      || !supportedFeatures11.shaderDrawParameters) {
@@ -148,15 +148,15 @@ namespace vk_device {
 		std::vector<float> queuePriorities{ 1.0f };
 		VkDeviceQueueCreateInfo graphicsQueueCreateInfo{
 			.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
-			.queueFamilyIndex = g_graphicsQueueIndex,
+			.queueFamilyIndex = g_graphics_queue_index,
 			.queueCount = 1,
 			.pQueuePriorities = queuePriorities.data(),
 		};
 
         uint32_t extensionCount;
-        vkEnumerateDeviceExtensionProperties(g_physicalDevice, nullptr, &extensionCount, nullptr);
+        vkEnumerateDeviceExtensionProperties(g_physical_device, nullptr, &extensionCount, nullptr);
         std::vector<VkExtensionProperties> availableExtensions(extensionCount);
-        vkEnumerateDeviceExtensionProperties(g_physicalDevice, nullptr, &extensionCount, availableExtensions.data());
+        vkEnumerateDeviceExtensionProperties(g_physical_device, nullptr, &extensionCount, availableExtensions.data());
 
 		std::vector<const char*> deviceExtensions;
         bool supportsSwapchain = std::find_if(availableExtensions.begin(), availableExtensions.end(), [](const auto& prop) { return strcmp(prop.extensionName, "VK_KHR_swapchain") == 0; }) != availableExtensions.end();
@@ -197,15 +197,15 @@ namespace vk_device {
 			.pEnabledFeatures = nullptr,
 		};
 
-		VkResult result = vkCreateDevice(g_physicalDevice, &deviceCreateInfo, nullptr, &g_device);
+		VkResult result = vkCreateDevice(g_physical_device, &deviceCreateInfo, nullptr, &g_device);
 		if (result != VK_SUCCESS) {
 			std::cerr << "[ERROR::DEVICE_MANAGER] failed to create logical device: " << result << '\n';
 			return false;
 		}
         volkLoadDevice(g_device);
 
-		vkGetDeviceQueue(g_device, g_graphicsQueueIndex, 0, &g_graphicsQueue);
-		if (g_graphicsQueue == VK_NULL_HANDLE) {
+		vkGetDeviceQueue(g_device, g_graphics_queue_index, 0, &g_graphics_queue);
+		if (g_graphics_queue == VK_NULL_HANDLE) {
 			std::cerr << "[ERROR::DEVICE_MANAGER] failed to get graphics queue device\n";
 			return false;
 		}
@@ -213,8 +213,8 @@ namespace vk_device {
 		return true;
 	}
 
-	VkPhysicalDevice GetPhysicalDevice() {
-		return g_physicalDevice;
+	const VkPhysicalDevice& GetPhysicalDevice() {
+		return g_physical_device;
 	}
 
 	const VkDevice& GetDevice() {
@@ -222,10 +222,10 @@ namespace vk_device {
 	}
 
 	VkQueue GetQueue() {
-		return g_graphicsQueue;
+		return g_graphics_queue;
 	}
 
 	uint32_t GetQueueIndex() {
-		return g_graphicsQueueIndex;
+		return g_graphics_queue_index;
 	}
 }

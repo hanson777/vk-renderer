@@ -1,4 +1,4 @@
-#include "vk_shader.h"
+#include "shader.h"
 #include "vk_common.h"
 #include <slang/slang.h>
 #include <slang/slang-com-ptr.h>
@@ -10,7 +10,7 @@
 #include <fstream>
 #include <sstream>
 
-namespace vk_shader {
+namespace slang_context {
 
     Slang::ComPtr<slang::IGlobalSession> g_slangGlobalSession;
     Slang::ComPtr<slang::ISession> g_slangSession;
@@ -61,13 +61,14 @@ namespace vk_shader {
 
 static void showDiagnostics(Slang::ComPtr<slang::IBlob>& diagnostics);
 
-VkShader::VkShader(const std::string& filename, const std::string& entryPointName, const VkShaderStageFlagBits stage) : m_entryPoint(entryPointName), m_stage(stage) {
+Shader::Shader(const std::string& filename, const std::string& entryPointName, const ShaderStage stage) : m_entry_point(entryPointName) {
+    set_shader_stage(stage);
     LoadModule(filename, entryPointName);
 }
 
-void VkShader::LoadModule(const std::string& filename, const std::string& entryPointName) {
+void Shader::LoadModule(const std::string& filename, const std::string& entryPointName) {
     Slang::ComPtr<slang::IBlob> diagnostics;
-    Slang::ComPtr<slang::IModule> slangModule(vk_shader::g_slangSession->loadModule(filename.c_str(), diagnostics.writeRef()));
+    Slang::ComPtr<slang::IModule> slangModule(slang_context::g_slangSession->loadModule(filename.c_str(), diagnostics.writeRef()));
     showDiagnostics(diagnostics);
     if (slangModule == nullptr) {
         std::cerr << "[ERROR::VK_SHADER] failed to load slang module\n";
@@ -84,7 +85,7 @@ void VkShader::LoadModule(const std::string& filename, const std::string& entryP
 
     std::array<slang::IComponentType*, 2> components = { slangModule, entryPoint };
     Slang::ComPtr<slang::IComponentType> program;
-    result = vk_shader::g_slangSession->createCompositeComponentType(components.data(), components.size(), program.writeRef(), diagnostics.writeRef());
+    result = slang_context::g_slangSession->createCompositeComponentType(components.data(), components.size(), program.writeRef(), diagnostics.writeRef());
     showDiagnostics(diagnostics);
     if (SLANG_FAILED(result)) {
         std::cerr << "[ERROR::VK_SHADER] failed to create composite component type\n";
@@ -108,8 +109,8 @@ void VkShader::LoadModule(const std::string& filename, const std::string& entryP
         return;
     }
 
-    m_moduleCreateInfo.codeSize = m_spirv->getBufferSize();
-    m_moduleCreateInfo.pCode = static_cast<const uint32_t*>(m_spirv->getBufferPointer());
+    m_module_create_info.codeSize = m_spirv->getBufferSize();
+    m_module_create_info.pCode = static_cast<const uint32_t*>(m_spirv->getBufferPointer());
     std::cout << "Shader module successfully read for file " << filename << '\n';
 }
 
@@ -118,4 +119,17 @@ static void showDiagnostics(Slang::ComPtr<slang::IBlob>& diagnostics) {
         std::cerr << "[Slang Diagnostics] " << static_cast<const char*>(diagnostics->getBufferPointer()) << '\n';
     }
     diagnostics.setNull();
+}
+
+void Shader::set_shader_stage(const ShaderStage stage) {
+    switch (stage) {
+    case ShaderStage::vertex:
+        Shader::m_stage = VK_SHADER_STAGE_VERTEX_BIT;
+        break;
+    case ShaderStage::fragment:
+        Shader::m_stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+        break;
+    default:
+        m_stage = VK_SHADER_STAGE_ALL;
+    }
 }

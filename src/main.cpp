@@ -1,6 +1,8 @@
 #include "Core/Window.h"
 #include "Render/vk_context.h"
-#include "Render/vk_render.h"
+#include "Render/shader.h"
+#include "Render/renderer.h"
+#include "Application/Application.h"
 #include <iostream>
 
 int main() {
@@ -10,13 +12,19 @@ int main() {
         return -1;
     }
 
+    if (!slang_context::InitSlangSession()) {
+        return -1;
+    }
+
+    Application::Init();
+
     if (!vk_context::Init()) {
         return -1;
     }
 
     while (!Window::ShouldClose()) {
         Window::BeginFrame();
-        vk_render::Render();
+        Renderer::Render();
     }
 
     vk_context::Shutdown();
