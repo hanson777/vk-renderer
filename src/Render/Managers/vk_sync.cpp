@@ -8,7 +8,7 @@
 
 namespace vk_sync {
 
-	std::vector<VkSemaphore> g_renderCompleteSemaphores;
+	std::vector<VkSemaphore> g_submitSemaphores;
 	std::vector<VkSemaphore> g_imageAcquiredSemaphores;
 	VkSemaphore g_timelineSemaphore = VK_NULL_HANDLE;
 	std::vector<VkCommandPool> g_commandPools;
@@ -43,8 +43,8 @@ namespace vk_sync {
 		}
 
 		// semaphores for swapchain images
-		g_renderCompleteSemaphores.resize(vk_swapchain::g_swapchainImages.size());
-		for (VkSemaphore& semaphore : g_renderCompleteSemaphores) {
+		g_submitSemaphores.resize(vk_swapchain::g_swapchainImages.size());
+		for (VkSemaphore& semaphore : g_submitSemaphores) {
 			if (vkCreateSemaphore(device, &binarySemaphoreCreateInfo, nullptr, &semaphore) != VK_SUCCESS) {
 				std::cerr << "[ERROR::SYNC_MANAGER] failed to create render complete semaphore\n";
 				return false;
@@ -84,7 +84,7 @@ namespace vk_sync {
 			vkDestroySemaphore(device, g_timelineSemaphore, nullptr);
 		}
 
-		for (VkSemaphore& semaphore : g_renderCompleteSemaphores) {
+		for (VkSemaphore& semaphore : g_submitSemaphores) {
 			if (semaphore != VK_NULL_HANDLE) vkDestroySemaphore(device, semaphore, nullptr);
 		}
 

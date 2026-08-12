@@ -21,4 +21,5 @@ namespace vk_swapchain {
     bool Init();
     void Shutdown();
     bool CreateSwapchain();
+    void RecreateSwapchain();
 }

@@ -37,51 +37,6 @@ namespace vk_swapchain {
         return true;
     }
 
-    bool CreateSwapchain() {
-        const VkPhysicalDevice physicalDevice = vk_device::GetPhysicalDevice();
-        const VkDevice device = vk_device::GetDevice();
-        const VkSurfaceKHR surface = vk_instance::GetSurface();
-
-        VkSurfaceCapabilitiesKHR surfaceCaps{};
-        if (vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface, &surfaceCaps) != VK_SUCCESS) {
-            std::cerr << "[ERROR::SWAPCHAIN_MANAGER] failed to get surface capabilities\n";
-            return false;
-        }
-
-        const VkFormat imageFormat = VK_FORMAT_B8G8R8A8_SRGB;
-        if (!supportsImageFormat(imageFormat)) {
-            std::cerr << "[ERROR::SWAPCHAIN_MANAGER] surface does not support requested image format\n";
-            return false;
-        }
-        g_swapchainImageFormat = imageFormat;
-
-        g_swapchainExtent = chooseSwapExtent(surfaceCaps);
-        VkSwapchainCreateInfoKHR swapchainCreateInfo{
-            .sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
-            .surface = surface,
-            .minImageCount = surfaceCaps.minImageCount,
-            .imageFormat = imageFormat,
-            .imageColorSpace = VK_COLORSPACE_SRGB_NONLINEAR_KHR,
-            .imageExtent{.width = g_swapchainExtent.width, .height = g_swapchainExtent.height },
-            .imageArrayLayers = 1,
-            .imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
-            .preTransform = surfaceCaps.currentTransform,
-            .compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
-            .presentMode = VK_PRESENT_MODE_FIFO_KHR,
-            .clipped = VK_TRUE,
-        };
-
-        if (vkCreateSwapchainKHR(device, &swapchainCreateInfo, nullptr, &g_swapchain) != VK_SUCCESS) {
-            std::cerr << "[ERROR::SWAPCHAIN_MANAGER] failed to create swapchain\n";
-            return false;
-        }
-
-        if (!getSwapchainImages()) return false;
-        if (!getDepthImages()) return false;
-
-        return true;
-    }
-
     void Shutdown() {
         const VkDevice& device = vk_device::GetDevice();
         for (VkImageView& swapchainImageView : g_swapchainImageViews) {
@@ -106,6 +61,56 @@ namespace vk_swapchain {
             vmaDestroyImage(vk_memory::GetAllocator(), g_depthImage, g_depthImageAllocation);
             g_depthImage = VK_NULL_HANDLE;
         }
+    }
+
+    bool CreateSwapchain() {
+        const VkPhysicalDevice physicalDevice = vk_device::GetPhysicalDevice();
+        const VkDevice device = vk_device::GetDevice();
+        const VkSurfaceKHR surface = vk_instance::GetSurface();
+
+        VkSurfaceCapabilitiesKHR surfaceCaps{};
+        if (vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface, &surfaceCaps) != VK_SUCCESS) {
+            std::cerr << "[ERROR::SWAPCHAIN_MANAGER] failed to get surface capabilities\n";
+            return false;
+        }
+
+        const VkFormat imageFormat = VK_FORMAT_B8G8R8A8_SRGB;
+        if (!supportsImageFormat(imageFormat)) {
+            std::cerr << "[ERROR::SWAPCHAIN_MANAGER] surface does not support requested image format\n";
+            return false;
+        }
+        g_swapchainImageFormat = imageFormat;
+
+        g_swapchainExtent = chooseSwapExtent(surfaceCaps);
+        VkSwapchainCreateInfoKHR swapchainCreateInfo{
+            .sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
+            .surface = surface,
+            .minImageCount = surfaceCaps.minImageCount + 1,
+            .imageFormat = imageFormat,
+            .imageColorSpace = VK_COLORSPACE_SRGB_NONLINEAR_KHR,
+            .imageExtent{.width = g_swapchainExtent.width, .height = g_swapchainExtent.height },
+            .imageArrayLayers = 1,
+            .imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+            .preTransform = surfaceCaps.currentTransform,
+            .compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
+            .presentMode = VK_PRESENT_MODE_FIFO_KHR,
+            .clipped = VK_TRUE,
+        };
+
+        if (vkCreateSwapchainKHR(device, &swapchainCreateInfo, nullptr, &g_swapchain) != VK_SUCCESS) {
+            std::cerr << "[ERROR::SWAPCHAIN_MANAGER] failed to create swapchain\n";
+            return false;
+        }
+
+        if (!getSwapchainImages()) return false;
+        if (!getDepthImages()) return false;
+
+        return true;
+    }
+
+    void RecreateSwapchain() {
+        Shutdown();
+        CreateSwapchain();
     }
 
     static bool getSwapchainImages() {

@@ -92,16 +92,23 @@ namespace vk_device {
 
 		VkPhysicalDeviceVulkan12Features supportedFeatures12{
 			.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES,
-			.pNext = &supportedFeatures13
+			.pNext = &supportedFeatures13,
+		};
+
+		VkPhysicalDeviceVulkan11Features supportedFeatures11{
+			.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES,
+			.pNext = &supportedFeatures12,
 		};
 
 		VkPhysicalDeviceFeatures2 supportedFeatures{
 			.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2,
-			.pNext = &supportedFeatures12,
+			.pNext = &supportedFeatures11,
 		};
 
 		vkGetPhysicalDeviceFeatures2(g_physicalDevice, &supportedFeatures);
-		if (!supportedFeatures13.dynamicRendering || !supportedFeatures13.synchronization2 || !supportedFeatures12.timelineSemaphore || !supportedFeatures14.maintenance5) {
+		if (!supportedFeatures13.dynamicRendering  || !supportedFeatures13.synchronization2 || 
+			!supportedFeatures12.timelineSemaphore || !supportedFeatures12.separateDepthStencilLayouts ||
+			!supportedFeatures14.maintenance5      || !supportedFeatures11.shaderDrawParameters) {
 			std::cerr << "[ERROR::DEVICE_MANAGER] physical device doesn't meet feature requirements\n";
 			return false;
 		}
@@ -123,12 +130,19 @@ namespace vk_device {
 		VkPhysicalDeviceVulkan12Features features12{
 			.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES,
 			.pNext = &features13,
+			.separateDepthStencilLayouts = VK_TRUE,
 			.timelineSemaphore = VK_TRUE,
+		};
+
+		VkPhysicalDeviceVulkan11Features features11{
+			.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES,
+			.pNext = &features12,
+			.shaderDrawParameters = VK_TRUE,
 		};
 
 		VkPhysicalDeviceFeatures2 features{
 			.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2,
-			.pNext = &features12,
+			.pNext = &features11,
 		};
 
 		std::vector<float> queuePriorities{ 1.0f };
@@ -160,6 +174,12 @@ namespace vk_device {
 		else {
 			std::cerr << "[ERROR::VK_DEVICE] device does not support shader draw parameters extension\n";
 			return false;
+		}
+
+		bool supportsPageableDeviceLocalMemory = std::find_if(availableExtensions.begin(), availableExtensions.end(), [](const auto& prop) { return strcmp(prop.extensionName, "VK_EXT_pageable_device_local_memory") == 0; }) != availableExtensions.end();
+		if (supportsPageableDeviceLocalMemory) {
+			deviceExtensions.push_back("VK_EXT_pageable_device_local_memory");
+			deviceExtensions.push_back("VK_EXT_memory_priority");
 		}
 
         #ifdef __APPLE__
