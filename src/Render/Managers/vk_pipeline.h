@@ -11,5 +11,5 @@ namespace vk_pipeline {
 
 	bool Init();
 	void Shutdown();
-	void AddShader(const std::string& filepath, const std::string& entryPoint, const ShaderStage stage);
+	void AddShader(const std::string& filepath, const std::string& entry_point, const ShaderStage stage);
 }

@@ -53,7 +53,7 @@ namespace Window {
 
     uint32_t GetWidth() { return g_width; }
 
-	const char** GetInstanceExtensions(uint32_t* extensionCount) {
-		return glfwGetRequiredInstanceExtensions(extensionCount);
+	const char** GetInstanceExtensions(uint32_t* extension_count) {
+		return glfwGetRequiredInstanceExtensions(extension_count);
 	}
 }

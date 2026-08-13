@@ -12,8 +12,8 @@
 
 namespace slang_context {
 
-    Slang::ComPtr<slang::IGlobalSession> g_slangGlobalSession;
-    Slang::ComPtr<slang::ISession> g_slangSession;
+    Slang::ComPtr<slang::IGlobalSession> g_slang_global_session;
+    Slang::ComPtr<slang::ISession> g_slang_session;
 
     bool Init() {
         if (!InitSlangSession()) return false;
@@ -21,36 +21,36 @@ namespace slang_context {
     }
 
     bool InitSlangSession() {
-        if (SLANG_FAILED(slang::createGlobalSession(g_slangGlobalSession.writeRef()))) {
+        if (SLANG_FAILED(slang::createGlobalSession(g_slang_global_session.writeRef()))) {
             std::cerr << "[ERROR::SHADER] failed to create slang global session\n";
             return false;
         }
 
-        slang::TargetDesc targetDesc{
+        slang::TargetDesc target_desc{
             .format = SLANG_SPIRV,
-            .profile = g_slangGlobalSession->findProfile("spirv_1_4"),
+            .profile = g_slang_global_session->findProfile("spirv_1_4"),
         };
 
-        std::array<const char*, 1> searchPaths = { "Shaders/" };
+        std::array<const char*, 1> search_paths = { "Shaders/" };
 
-        slang::CompilerOptionEntry spirvOption{
+        slang::CompilerOptionEntry spirv_option{
             .name = slang::CompilerOptionName::EmitSpirvDirectly,
             .value = slang::CompilerOptionValueKind::Int,
         };
 
-        std::array<slang::CompilerOptionEntry, 1> compilerOptionEntries = { spirvOption };
+        std::array<slang::CompilerOptionEntry, 1> compiler_option_entries = { spirv_option };
 
-        slang::SessionDesc sessionDesc{
-            .targets = &targetDesc,
+        slang::SessionDesc session_desc{
+            .targets = &target_desc,
             .targetCount = 1,
             .defaultMatrixLayoutMode = SLANG_MATRIX_LAYOUT_COLUMN_MAJOR,
-            .searchPaths = searchPaths.data(),
-            .searchPathCount = static_cast<uint32_t>(searchPaths.size()),
-            .compilerOptionEntries = compilerOptionEntries.data(),
-            .compilerOptionEntryCount = static_cast<uint32_t>(compilerOptionEntries.size()),
+            .searchPaths = search_paths.data(),
+            .searchPathCount = static_cast<uint32_t>(search_paths.size()),
+            .compilerOptionEntries = compiler_option_entries.data(),
+            .compilerOptionEntryCount = static_cast<uint32_t>(compiler_option_entries.size()),
         };
 
-        if (SLANG_FAILED(g_slangGlobalSession->createSession(sessionDesc, g_slangSession.writeRef()))) {
+        if (SLANG_FAILED(g_slang_global_session->createSession(session_desc, g_slang_session.writeRef()))) {
             std::cerr << "[ERROR::SHADER] failed to create slang session\n";
             return false;
         }
@@ -61,48 +61,48 @@ namespace slang_context {
 
 static void showDiagnostics(Slang::ComPtr<slang::IBlob>& diagnostics);
 
-Shader::Shader(const std::string& filename, const std::string& entryPointName, const ShaderStage stage) : m_entry_point(entryPointName) {
+Shader::Shader(const std::string& filename, const std::string& entry_point_name, const ShaderStage stage) : m_entry_point(entry_point_name) {
     set_shader_stage(stage);
-    LoadModule(filename, entryPointName);
+    LoadModule(filename, entry_point_name);
 }
 
-void Shader::LoadModule(const std::string& filename, const std::string& entryPointName) {
+void Shader::LoadModule(const std::string& filename, const std::string& entry_point_name) {
     Slang::ComPtr<slang::IBlob> diagnostics;
-    Slang::ComPtr<slang::IModule> slangModule(slang_context::g_slangSession->loadModule(filename.c_str(), diagnostics.writeRef()));
+    Slang::ComPtr<slang::IModule> slang_module(slang_context::g_slang_session->loadModule(filename.c_str(), diagnostics.writeRef()));
     showDiagnostics(diagnostics);
-    if (slangModule == nullptr) {
+    if (slang_module == nullptr) {
         std::cerr << "[ERROR::VK_SHADER] failed to load slang module\n";
         return;
     }
 
     SlangResult result = std::numeric_limits<int32_t>::max();
-    Slang::ComPtr<slang::IEntryPoint> entryPoint;
-    result = slangModule->findEntryPointByName(entryPointName.c_str(), entryPoint.writeRef());
+    Slang::ComPtr<slang::IEntryPoint> entry_point;
+    result = slang_module->findEntryPointByName(entry_point_name.c_str(), entry_point.writeRef());
     if (SLANG_FAILED(result)) {
-        std::cerr << "[ERROR::SHADER] entry point not found: " << entryPointName << "\n";
+        std::cerr << "[ERROR::SHADER] entry point not found: " << entry_point_name << "\n";
         return;
     }
 
-    std::array<slang::IComponentType*, 2> components = { slangModule, entryPoint };
+    std::array<slang::IComponentType*, 2> components = { slang_module, entry_point };
     Slang::ComPtr<slang::IComponentType> program;
-    result = slang_context::g_slangSession->createCompositeComponentType(components.data(), components.size(), program.writeRef(), diagnostics.writeRef());
+    result = slang_context::g_slang_session->createCompositeComponentType(components.data(), components.size(), program.writeRef(), diagnostics.writeRef());
     showDiagnostics(diagnostics);
     if (SLANG_FAILED(result)) {
         std::cerr << "[ERROR::VK_SHADER] failed to create composite component type\n";
         return;
     }
 
-    Slang::ComPtr<slang::IComponentType> linkedProgram;
-    result = program->link(linkedProgram.writeRef(), diagnostics.writeRef());
+    Slang::ComPtr<slang::IComponentType> linked_program;
+    result = program->link(linked_program.writeRef(), diagnostics.writeRef());
     showDiagnostics(diagnostics);
     if (SLANG_FAILED(result)) {
         std::cerr << "[ERROR::VK_SHADER] failed to link program\n";
         return;
     }
 
-    int entryPointIndex = 0;
-    int targetIndex = 0;
-    result = linkedProgram->getEntryPointCode(entryPointIndex, targetIndex, m_spirv.writeRef(), diagnostics.writeRef());
+    int entry_point_index = 0;
+    int target_index = 0;
+    result = linked_program->getEntryPointCode(entry_point_index, target_index, m_spirv.writeRef(), diagnostics.writeRef());
     showDiagnostics(diagnostics);
     if (SLANG_FAILED(result)) {
         std::cerr << "[ERROR::VK_SHADER] failed to get entry point code\n";

@@ -232,7 +232,7 @@ namespace Renderer {
 		g_next_signal_value++;
 	}
 
-	void LoadShader(const std::string& filepath, const std::string& entryPoint, const ShaderStage stage) {
-		vk_pipeline::AddShader(filepath, entryPoint, stage);
+	void LoadShader(const std::string& filepath, const std::string& entry_point, const ShaderStage stage) {
+		vk_pipeline::AddShader(filepath, entry_point, stage);
 	}
 }

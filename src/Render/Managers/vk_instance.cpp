@@ -14,24 +14,24 @@ namespace vk_instance {
     VkDebugUtilsMessengerEXT g_debug_messenger = VK_NULL_HANDLE;
     VkSurfaceKHR g_surface = VK_NULL_HANDLE;
     
-    bool g_validationEnabled = true;
+    bool g_validation_enabled = true;
 
-    static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageTypes, const VkDebugUtilsMessengerCallbackDataEXT* callbackData, void* userData) {
-        std::cerr << "[VALIDATION LAYER] " << callbackData->pMessage << '\n';
+    static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT message_severity, VkDebugUtilsMessageTypeFlagsEXT message_types, const VkDebugUtilsMessengerCallbackDataEXT* callback_data, void* user_data) {
+        std::cerr << "[VALIDATION LAYER] " << callback_data->pMessage << '\n';
         return VK_FALSE;
     }
 
     bool Init() {
-        uint32_t glfwExtensionCount = 0;
-		const char** glfwExtensions;
-		glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+        uint32_t glfw_extension_count = 0;
+		const char** glfw_extensions;
+		glfw_extensions = glfwGetRequiredInstanceExtensions(&glfw_extension_count);
 
         std::vector<const char*> extensions(
-            glfwExtensions,
-            glfwExtensions + glfwExtensionCount
+            glfw_extensions,
+            glfw_extensions + glfw_extension_count
         );
         
-        if (g_validationEnabled) { 
+        if (g_validation_enabled) { 
             extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
         }
 
@@ -40,14 +40,14 @@ namespace vk_instance {
         #endif
 
         std::vector<const char*> layers;
-        if (g_validationEnabled) {
-            uint32_t layerCount;
-            vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
-            std::vector<VkLayerProperties> availableLayers(layerCount);
-            vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data()); 
+        if (g_validation_enabled) {
+            uint32_t layer_count;
+            vkEnumerateInstanceLayerProperties(&layer_count, nullptr);
+            std::vector<VkLayerProperties> available_layers(layer_count);
+            vkEnumerateInstanceLayerProperties(&layer_count, available_layers.data()); 
             
             bool found = false;
-            for (const auto& layer : availableLayers) {
+            for (const auto& layer : available_layers) {
                 if (strcmp(layer.layerName, "VK_LAYER_KHRONOS_validation") == 0) {
                     layers.push_back("VK_LAYER_KHRONOS_validation");
                     found = true;
@@ -57,11 +57,11 @@ namespace vk_instance {
             
             if (!found) {
                 std::cerr << "[ERROR::INSTANCE_MANAGER] validation layers requested but none found\n";
-                g_validationEnabled = false;
+                g_validation_enabled = false;
             }
         }
 
-        VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{
+        VkDebugUtilsMessengerCreateInfoEXT debug_create_info{
             .sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT,
             .messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT    | 
                                VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT   |
@@ -72,26 +72,26 @@ namespace vk_instance {
             .pfnUserCallback = debugCallback,
         };
 
-		VkApplicationInfo appInfo{
+		VkApplicationInfo app_info{
 			.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,
 			.pApplicationName = "hi",
 			.apiVersion = VK_VERSION,
 		};
 
-		VkInstanceCreateInfo instanceCreateInfo{
+		VkInstanceCreateInfo instance_create_info{
 			.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
-            .pNext = g_validationEnabled ? &debugCreateInfo : nullptr,
-			.pApplicationInfo = &appInfo,
+            .pNext = g_validation_enabled ? &debug_create_info : nullptr,
+			.pApplicationInfo = &app_info,
             .enabledLayerCount = static_cast<uint32_t>(layers.size()),
             .ppEnabledLayerNames = layers.data(),
 			.enabledExtensionCount = static_cast<uint32_t>(extensions.size()),
 			.ppEnabledExtensionNames = extensions.data(),
 		};
         #ifdef __APPLE__
-            instanceCreateInfo.flags = VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
+            instance_create_info.flags = VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
         #endif
 
-        VkResult result = vkCreateInstance(&instanceCreateInfo, nullptr, &g_instance);
+        VkResult result = vkCreateInstance(&instance_create_info, nullptr, &g_instance);
         if (result != VK_SUCCESS) {
             std::cerr << "[ERROR::INSTANCE_MANAGER] failed to create instance: " << result << '\n';
             return false;
@@ -99,7 +99,7 @@ namespace vk_instance {
 
 		volkLoadInstance(g_instance);
 
-        if (vkCreateDebugUtilsMessengerEXT(g_instance, &debugCreateInfo, nullptr, &g_debug_messenger) != VK_SUCCESS) {
+        if (vkCreateDebugUtilsMessengerEXT(g_instance, &debug_create_info, nullptr, &g_debug_messenger) != VK_SUCCESS) {
             std::cerr << "[ERROR::INSTANCE_MANAGER] failed to set up debug messenger\n";
             return false;
         }
@@ -113,7 +113,7 @@ namespace vk_instance {
     }
     
     void Shutdown() {
-        if (g_validationEnabled && g_debug_messenger != VK_NULL_HANDLE) {
+        if (g_validation_enabled && g_debug_messenger != VK_NULL_HANDLE) {
             vkDestroyDebugUtilsMessengerEXT(g_instance, g_debug_messenger, nullptr);
         }
         if (g_surface != VK_NULL_HANDLE) vkDestroySurfaceKHR(g_instance, g_surface, nullptr);

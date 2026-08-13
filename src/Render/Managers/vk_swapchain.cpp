@@ -39,9 +39,9 @@ namespace vk_swapchain {
 
     void Shutdown() {
         const VkDevice& device = vk_device::GetDevice();
-        for (VkImageView& swapchainImageView : g_swapchain_image_views) {
-            if (swapchainImageView != VK_NULL_HANDLE) {
-                vkDestroyImageView(device, swapchainImageView, nullptr);
+        for (VkImageView& swapchain_image_view : g_swapchain_image_views) {
+            if (swapchain_image_view != VK_NULL_HANDLE) {
+                vkDestroyImageView(device, swapchain_image_view, nullptr);
             }
         }
         g_swapchain_image_views.clear();
@@ -64,40 +64,40 @@ namespace vk_swapchain {
     }
 
     bool CreateSwapchain() {
-        const VkPhysicalDevice physicalDevice = vk_device::GetPhysicalDevice();
+        const VkPhysicalDevice physical_device = vk_device::GetPhysicalDevice();
         const VkDevice device = vk_device::GetDevice();
         const VkSurfaceKHR surface = vk_instance::GetSurface();
 
-        VkSurfaceCapabilitiesKHR surfaceCaps{};
-        if (vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface, &surfaceCaps) != VK_SUCCESS) {
+        VkSurfaceCapabilitiesKHR surface_caps{};
+        if (vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physical_device, surface, &surface_caps) != VK_SUCCESS) {
             std::cerr << "[ERROR::SWAPCHAIN_MANAGER] failed to get surface capabilities\n";
             return false;
         }
 
-        const VkFormat imageFormat = VK_FORMAT_B8G8R8A8_SRGB;
-        if (!supportsImageFormat(imageFormat)) {
+        const VkFormat image_format = VK_FORMAT_B8G8R8A8_SRGB;
+        if (!supportsImageFormat(image_format)) {
             std::cerr << "[ERROR::SWAPCHAIN_MANAGER] surface does not support requested image format\n";
             return false;
         }
-        g_swapchain_image_format = imageFormat;
+        g_swapchain_image_format = image_format;
 
-        g_swapchain_extent = chooseSwapExtent(surfaceCaps);
-        VkSwapchainCreateInfoKHR swapchainCreateInfo{
+        g_swapchain_extent = chooseSwapExtent(surface_caps);
+        VkSwapchainCreateInfoKHR swapchain_create_info{
             .sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
             .surface = surface,
-            .minImageCount = surfaceCaps.minImageCount + 1,
-            .imageFormat = imageFormat,
+            .minImageCount = surface_caps.minImageCount + 1,
+            .imageFormat = image_format,
             .imageColorSpace = VK_COLORSPACE_SRGB_NONLINEAR_KHR,
             .imageExtent{.width = g_swapchain_extent.width, .height = g_swapchain_extent.height },
             .imageArrayLayers = 1,
             .imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
-            .preTransform = surfaceCaps.currentTransform,
+            .preTransform = surface_caps.currentTransform,
             .compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
             .presentMode = VK_PRESENT_MODE_FIFO_KHR,
             .clipped = VK_TRUE,
         };
 
-        if (vkCreateSwapchainKHR(device, &swapchainCreateInfo, nullptr, &g_swapchain) != VK_SUCCESS) {
+        if (vkCreateSwapchainKHR(device, &swapchain_create_info, nullptr, &g_swapchain) != VK_SUCCESS) {
             std::cerr << "[ERROR::SWAPCHAIN_MANAGER] failed to create swapchain\n";
             return false;
         }
@@ -115,16 +115,16 @@ namespace vk_swapchain {
 
     static bool getSwapchainImages() {
         VkDevice device = vk_device::GetDevice();
-        VkPhysicalDevice physicalDevice = vk_device::GetPhysicalDevice();
+        VkPhysicalDevice physical_device = vk_device::GetPhysicalDevice();
 
-        uint32_t imageCount = 0;
-        vkGetSwapchainImagesKHR(device, g_swapchain, &imageCount, nullptr);
-        g_swapchain_images.resize(imageCount);
-        vkGetSwapchainImagesKHR(device, g_swapchain, &imageCount, g_swapchain_images.data());
-        g_swapchain_image_views.resize(imageCount);
+        uint32_t image_count = 0;
+        vkGetSwapchainImagesKHR(device, g_swapchain, &image_count, nullptr);
+        g_swapchain_images.resize(image_count);
+        vkGetSwapchainImagesKHR(device, g_swapchain, &image_count, g_swapchain_images.data());
+        g_swapchain_image_views.resize(image_count);
 
         for (size_t i = 0; i < g_swapchain_images.size(); i++) {
-            VkImageViewCreateInfo imageViewCreateInfo{
+            VkImageViewCreateInfo image_view_create_info{
                 .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
                 .image = g_swapchain_images[i],
                 .viewType = VK_IMAGE_VIEW_TYPE_2D,
@@ -138,7 +138,7 @@ namespace vk_swapchain {
                 },
             };
 
-            if (vkCreateImageView(device, &imageViewCreateInfo, nullptr, &g_swapchain_image_views[i]) != VK_SUCCESS) {
+            if (vkCreateImageView(device, &image_view_create_info, nullptr, &g_swapchain_image_views[i]) != VK_SUCCESS) {
                 std::cerr << "[ERROR::SWAPCHAIN_MANAGER] failed to create swapchain image view\n";
                 return false;
             }
@@ -149,19 +149,19 @@ namespace vk_swapchain {
 
     static bool getDepthImages() {
         VkDevice device = vk_device::GetDevice();
-        VkPhysicalDevice physicalDevice = vk_device::GetPhysicalDevice();
+        VkPhysicalDevice physical_device = vk_device::GetPhysicalDevice();
 
-        std::vector<VkFormat> depthFormats{ VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT };
-        for (const VkFormat& format : depthFormats) {
-            VkFormatProperties2 formatProperties{ .sType = VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_2 };
-            vkGetPhysicalDeviceFormatProperties2(physicalDevice, format, &formatProperties);
-            if (formatProperties.formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT) {
+        std::vector<VkFormat> depth_formats{ VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT };
+        for (const VkFormat& format : depth_formats) {
+            VkFormatProperties2 format_properties{ .sType = VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_2 };
+            vkGetPhysicalDeviceFormatProperties2(physical_device, format, &format_properties);
+            if (format_properties.formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT) {
                 g_depth_image_format = format;
                 break;
             }
         }
 
-        VkImageCreateInfo depthImageCreateInfo{
+        VkImageCreateInfo depth_image_create_info{
             .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
             .imageType = VK_IMAGE_TYPE_2D,
             .format = g_depth_image_format,
@@ -174,16 +174,16 @@ namespace vk_swapchain {
             .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
         };
 
-        VmaAllocationCreateInfo allocCreateInfo{
+        VmaAllocationCreateInfo alloc_create_info{
             .flags = VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT,
             .usage = VMA_MEMORY_USAGE_AUTO,
         };
 
-        if (vmaCreateImage(vk_memory::GetAllocator(), &depthImageCreateInfo, &allocCreateInfo, &g_depth_image, &g_depth_image_allocation, nullptr) != VK_SUCCESS) {
+        if (vmaCreateImage(vk_memory::GetAllocator(), &depth_image_create_info, &alloc_create_info, &g_depth_image, &g_depth_image_allocation, nullptr) != VK_SUCCESS) {
             std::cerr << "[ERROR::SWAPCHAIN] error creating and allocating depth image\n";
         }
 
-        VkImageViewCreateInfo depthImageViewInfo{
+        VkImageViewCreateInfo depth_image_view_info{
             .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
             .image = g_depth_image,
             .viewType = VK_IMAGE_VIEW_TYPE_2D,
@@ -194,7 +194,7 @@ namespace vk_swapchain {
             },
         };
 
-        if (vkCreateImageView(device, &depthImageViewInfo, nullptr, &g_depth_image_view) != VK_SUCCESS) {
+        if (vkCreateImageView(device, &depth_image_view_info, nullptr, &g_depth_image_view) != VK_SUCCESS) {
             std::cerr << "[ERROR::SWAPCHAIN_MANAGER] failed to create depth image view\n";
             return false;
         }
@@ -203,16 +203,16 @@ namespace vk_swapchain {
     }
 
     static bool supportsImageFormat(const VkFormat format) {
-        VkPhysicalDevice physicalDevice = vk_device::GetPhysicalDevice();
+        VkPhysicalDevice physical_device = vk_device::GetPhysicalDevice();
         VkSurfaceKHR surface = vk_instance::GetSurface();
 
-        uint32_t formatCount = 0;
-        vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &formatCount, nullptr);
-        std::vector<VkSurfaceFormatKHR> surfaceFormats(formatCount);
-        vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &formatCount, surfaceFormats.data());
+        uint32_t format_count = 0;
+        vkGetPhysicalDeviceSurfaceFormatsKHR(physical_device, surface, &format_count, nullptr);
+        std::vector<VkSurfaceFormatKHR> surface_formats(format_count);
+        vkGetPhysicalDeviceSurfaceFormatsKHR(physical_device, surface, &format_count, surface_formats.data());
 
-        for (const auto& surfaceFormat : surfaceFormats) {
-            if (surfaceFormat.format == format) {
+        for (const auto& surface_format : surface_formats) {
+            if (surface_format.format == format) {
                 return true;
             }
         }

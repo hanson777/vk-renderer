@@ -16,8 +16,8 @@ enum class ShaderStage {
 
 struct Shader {
 	Shader() = default;
-	Shader(const std::string& filename, const std::string& entryPointName, const ShaderStage stage);
-	void LoadModule(const std::string& filename, const std::string& entryPointName);
+	Shader(const std::string& filename, const std::string& entry_point_name, const ShaderStage stage);
+	void LoadModule(const std::string& filename, const std::string& entry_point_name);
 
 	VkShaderModuleCreateInfo m_module_create_info{ .sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO };
 	std::string m_entry_point;
