@@ -1,5 +1,5 @@
 #pragma once
-#include "shader.h"
+#include "Render/Types/Shader.h"
 #include <string>
 
 namespace Renderer {

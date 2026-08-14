@@ -1,5 +1,5 @@
 #include "shader.h"
-#include "vk_common.h"
+#include "Render/vk_common.h"
 #include <slang/slang.h>
 #include <slang/slang-com-ptr.h>
 #include <array>
@@ -7,8 +7,6 @@
 #include <string>
 #include <iostream>
 #include <limits>
-#include <fstream>
-#include <sstream>
 
 namespace slang_context {
 

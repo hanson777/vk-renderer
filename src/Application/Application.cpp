@@ -1,6 +1,6 @@
 #include "Application.h"
-#include "Render/renderer.h"
-#include "Render/shader.h"
+#include "Render/Renderer.h"
+#include "Render/Types/Shader.h"
 
 namespace Application {
 

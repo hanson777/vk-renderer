@@ -1,15 +1,18 @@
 #include "Input.h"
 #include "Core/Window.h"
 #include <glm/glm.hpp>
+#include <iostream>
 
 namespace Input {
 
    glm::vec2 g_current_position(Window::GetHeight() / 2, Window::GetWidth() / 2);
    glm::vec2 g_last_position(0.0f);
+   glm::vec2 g_start_position(0.0f);
    glm::vec2 g_mouse_delta(0.0f); 
 
    float g_scroll_delta = 0.0f;
    bool g_dragging = false;
+   bool g_mouse_moving = false;
 
    void Update() {
         g_mouse_delta = glm::vec2(0.0f, 0.0f); 

@@ -1,10 +1,10 @@
-#include "renderer.h"
+#include "Renderer.h"
 #include "vk_common.h"
 #include "Managers/vk_device.h"
 #include "Managers/vk_swapchain.h"
 #include "Managers/vk_pipeline.h"
 #include "Managers/vk_sync.h"
-#include "shader.h"
+#include "Render/Types/Shader.h"
 #include <cstdint>
 #include <vector>
 

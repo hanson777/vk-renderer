@@ -1,7 +1,8 @@
 #include "Core/Window.h"
 #include "Render/vk_context.h"
-#include "Render/shader.h"
-#include "Render/renderer.h"
+#include "Render/Types/Shader.h"
+#include "Render/Renderer.h"
+#include "Input/Input.h"
 #include "Application/Application.h"
 #include <iostream>
 
@@ -24,6 +25,7 @@ int main() {
 
     while (!Window::ShouldClose()) {
         Window::BeginFrame();
+        Input::Update();
         Renderer::Render();
     }
 

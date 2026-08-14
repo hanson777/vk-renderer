@@ -75,6 +75,7 @@ namespace Window {
         if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
             double start_x_pos, start_y_pos;
             glfwGetCursorPos(window, &start_x_pos, &start_y_pos);
+            Input::g_start_position = { start_x_pos, start_y_pos };
             Input::HandleMouseDrag(start_x_pos, start_y_pos, true);
         } else if (action == GLFW_RELEASE) {
             Input::HandleMouseDrag(0, 0, false);

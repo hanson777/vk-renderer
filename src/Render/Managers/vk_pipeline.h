@@ -1,6 +1,6 @@
 #pragma once
 #include "Render/vk_common.h"
-#include "Render/shader.h"
+#include "Render/Types/Shader.h"
 #include <string>
 
 struct Shader;
