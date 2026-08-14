@@ -72,6 +72,9 @@ FetchContent_Declare(
    GIT_TAG v2026.14.1
    GIT_SHALLOW TRUE
 )
+set(SLANG_ENABLE_GFX OFF CACHE BOOL "" FORCE)
+set(SLANG_ENABLE_EXAMPLES OFF CACHE BOOL "" FORCE)
+set(SLANG_ENABLE_TESTS OFF CACHE BOOL "" FORCE)
 
 FetchContent_MakeAvailable(glfw glm stb_image tinyobjloader volk VulkanMemoryAllocator slang)
 
@@ -87,9 +90,17 @@ add_executable(${PROJECT_NAME}
   src/Render/Managers/vk_swapchain.cpp
   src/Render/Managers/vk_pipeline.cpp
   src/Render/Managers/vk_sync.cpp
-  src/Render/shader.cpp
-  src/Render/renderer.cpp
+  src/Render/Types/Shader.cpp
+  src/Render/Renderer.cpp
   src/Application/Application.cpp
+  src/Input/Input.cpp
+  src/Camera/arcball_camera.cpp
+)
+
+add_custom_target(run
+  COMMAND vk-renderer
+  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/src
+  DEPENDS vk-renderer
 )
 
 target_include_directories(${PROJECT_NAME} PRIVATE
