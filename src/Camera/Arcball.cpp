@@ -1,4 +1,4 @@
-#include "arcball_camera.h"
+#include "Arcball.h"
 #include "Input/Input.h"
 #include <glm/glm.hpp>
 #include <glm/gtx/quaternion.hpp>

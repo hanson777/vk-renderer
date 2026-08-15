@@ -5,14 +5,13 @@
 #include "Managers/vk_pipeline.h"
 #include "Managers/vk_sync.h"
 #include "Render/Types/Shader.h"
-#include "Camera/arcball_camera.h"
+#include "Camera/Arcball.h"
 #include "Core/Window.h"
 #include <cstdint>
 #include <vector>
 #include <string>
 #include <glm/glm.hpp>
 #include <glm/ext/matrix_clip_space.hpp>
-#include <glm/ext/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>
 
 namespace Renderer {

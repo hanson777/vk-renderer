@@ -3,7 +3,7 @@
 #include "Render/Types/Shader.h"
 #include "Render/Renderer.h"
 #include "Input/Input.h"
-#include "Camera/arcball_camera.h"
+#include "Camera/Arcball.h"
 #include "Application/Application.h"
 #include <iostream>
 

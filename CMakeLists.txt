@@ -94,7 +94,7 @@ add_executable(${PROJECT_NAME}
   src/Render/Renderer.cpp
   src/Application/Application.cpp
   src/Input/Input.cpp
-  src/Camera/arcball_camera.cpp
+  src/Camera/Arcball.cpp
 )
 
 add_custom_target(run
