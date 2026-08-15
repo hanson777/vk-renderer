@@ -6,7 +6,6 @@
 namespace Input {
 
    glm::vec2 g_current_position(0.0f);
-   glm::vec2 g_start_position(0.0f);
    glm::vec2 g_last_position(0.0f);
 
    float g_scroll_delta = 0.0f;
@@ -16,6 +15,7 @@ namespace Input {
    static glm::vec2 ndc(float x, float y);
 
    void Update() {
+        g_last_position = g_current_position;
         g_scroll_delta = 0.0f;
         g_mouse_moving = false;
     }
@@ -27,8 +27,8 @@ namespace Input {
     void HandleMouseDrag(float x_pos, float y_pos, bool dragging) {
         if (dragging) {
             glm::vec2 point = ndc(x_pos, y_pos);
-            g_start_position = point;
-            g_last_position = point; 
+            g_last_position = point;
+            g_current_position = point;
             g_dragging = true;
         } else {
             g_dragging = false;

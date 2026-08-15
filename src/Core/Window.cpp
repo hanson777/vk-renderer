@@ -77,11 +77,13 @@ namespace Window {
     } 
     
     void mouse_button_callback(GLFWwindow* window, int button, int action, int mods) {
-        if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
-            double x_pos, y_pos;
-            glfwGetCursorPos(window, &x_pos, &y_pos);
-            Input::HandleMouseDrag(x_pos, y_pos, true);
-        } else if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE) {
+        if (button != GLFW_MOUSE_BUTTON_LEFT) return;
+
+        if (action == GLFW_PRESS) {
+            double x, y;
+            glfwGetCursorPos(window, &x, &y);
+            Input::HandleMouseDrag(x, y, true);
+        } else if (action == GLFW_RELEASE) {
             Input::HandleMouseDrag(0, 0, false);
         }
     }
