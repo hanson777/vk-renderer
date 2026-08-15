@@ -1,4 +1,4 @@
-#include "shader.h"
+#include "Shader.h"
 #include "Render/vk_common.h"
 #include <slang/slang.h>
 #include <slang/slang-com-ptr.h>

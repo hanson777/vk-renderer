@@ -164,7 +164,7 @@ namespace Renderer {
 
 			glm::mat4 view = Arcball::GetViewMatrix() * arcball_rotation;
 
-			glm::mat4 projection = glm::perspective(glm::radians(Arcball::g_fov), 800.0f / 600.0f, 0.1f, 100.0f);
+			glm::mat4 projection = glm::perspective(glm::radians(Arcball::g_fov), (float)vk_swapchain::g_swapchain_extent.width / (float)vk_swapchain::g_swapchain_extent.height, 0.1f, 100.0f);
 			projection[1][1] *= -1;
 
 			glm::mat4 mvp = projection * view * model;

@@ -10,6 +10,7 @@ namespace Window {
 	GLFWwindow* g_handle = nullptr;
 	uint32_t g_height = 0;
 	uint32_t g_width = 0;
+    float g_aspect;
     
     void mouse_position_callback(GLFWwindow* window, double x_pos, double y_pos);
     void scroll_callback(GLFWwindow* window, double dx, double dy);
@@ -35,6 +36,7 @@ namespace Window {
 
 		g_height = height;
 		g_width = width;
+        g_aspect = static_cast<float>(width) / static_cast<float>(height);
         
         glfwSwapInterval(1);
         
@@ -66,14 +68,14 @@ namespace Window {
     void SetHeight(uint32_t height) {
         g_height = height;
     }
+    
+    float GetAspect() { return g_aspect; }
 
 	const char** GetInstanceExtensions(uint32_t* extension_count) {
 		return glfwGetRequiredInstanceExtensions(extension_count);
 	}
 
     void mouse_position_callback(GLFWwindow* window, double x_pos, double y_pos) {
-        x_pos = (2.0f * x_pos) / Window::GetWidth() - 1.0f;
-        y_pos = 1.0f - (2.0f * y_pos) / Window::GetHeight();
         Input::HandleMouseMove(x_pos, y_pos);
     }
     
@@ -83,14 +85,9 @@ namespace Window {
     
     void mouse_button_callback(GLFWwindow* window, int button, int action, int mods) {
         if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
-            double start_x_pos, start_y_pos;
-            glfwGetCursorPos(window, &start_x_pos, &start_y_pos);
-
-            start_x_pos = (2.0f * start_x_pos) / Window::GetWidth() - 1.0f;
-            start_y_pos = 1.0f - (2.0f * start_y_pos) / Window::GetHeight();
-
-            Input::g_start_position = { start_x_pos, start_y_pos };
-            Input::HandleMouseDrag(start_x_pos, start_y_pos, true);
+            double x_pos, y_pos;
+            glfwGetCursorPos(window, &x_pos, &y_pos);
+            Input::HandleMouseDrag(x_pos, y_pos, true);
         } else if (action == GLFW_RELEASE) {
             Input::HandleMouseDrag(0, 0, false);
         }
