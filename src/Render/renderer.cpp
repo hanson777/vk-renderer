@@ -6,6 +6,7 @@
 #include "Managers/vk_sync.h"
 #include "Render/Types/Shader.h"
 #include "Camera/arcball_camera.h"
+#include "Core/Window.h"
 #include <cstdint>
 #include <vector>
 #include <string>
@@ -164,7 +165,7 @@ namespace Renderer {
 
 			glm::mat4 view = Arcball::GetViewMatrix() * arcball_rotation;
 
-			glm::mat4 projection = glm::perspective(glm::radians(Arcball::g_fov), (float)vk_swapchain::g_swapchain_extent.width / (float)vk_swapchain::g_swapchain_extent.height, 0.1f, 100.0f);
+			glm::mat4 projection = glm::perspective(glm::radians(Arcball::g_fov), (float)Window::GetWidth() / Window::GetHeight(), 0.1f, 100.0f);
 			projection[1][1] *= -1;
 
 			glm::mat4 mvp = projection * view * model;

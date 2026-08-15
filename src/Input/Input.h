@@ -5,7 +5,6 @@ namespace Input {
    extern glm::vec2 g_current_position;
    extern glm::vec2 g_last_position;
    extern glm::vec2 g_start_position;
-   extern glm::vec2 g_mouse_delta;
 
    extern float g_scroll_delta;
    extern bool g_dragging;

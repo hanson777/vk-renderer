@@ -4,7 +4,6 @@
 namespace Arcball {
 
     extern glm::vec3 g_position;
-    extern float g_angle;
     extern float g_fov;
 
     void Init();

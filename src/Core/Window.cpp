@@ -10,8 +10,8 @@ namespace Window {
 	GLFWwindow* g_handle = nullptr;
 	uint32_t g_height = 0;
 	uint32_t g_width = 0;
-    float g_aspect;
     
+    void window_size_callback(GLFWwindow* window, int width, int height);
     void mouse_position_callback(GLFWwindow* window, double x_pos, double y_pos);
     void scroll_callback(GLFWwindow* window, double dx, double dy);
     void mouse_button_callback(GLFWwindow* window, int button, int action, int mods);
@@ -30,14 +30,16 @@ namespace Window {
 			return false;
 		}
         
+        glfwSetWindowSizeCallback(g_handle, window_size_callback);
         glfwSetCursorPosCallback(g_handle, mouse_position_callback);
         glfwSetScrollCallback(g_handle, scroll_callback);
         glfwSetMouseButtonCallback(g_handle, mouse_button_callback);
 
-		g_height = height;
-		g_width = width;
-        g_aspect = static_cast<float>(width) / static_cast<float>(height);
-        
+        int actual_width, actual_height;
+        glfwGetWindowSize(g_handle, &actual_width, &actual_height);
+        g_width = static_cast<uint32_t>(actual_width);
+        g_height = static_cast<uint32_t>(actual_height);
+ 
         glfwSwapInterval(1);
         
         return true;
@@ -59,21 +61,12 @@ namespace Window {
 
     uint32_t GetWidth() { return g_width; }
 
-    void SetWidth(uint32_t width) {
-        g_width = width;
-    }
-    
     uint32_t GetHeight() { return g_height; }
 
-    void SetHeight(uint32_t height) {
-        g_height = height;
+    void window_size_callback(GLFWwindow* window, int width, int height) {
+        g_width = static_cast<uint32_t>(width);
+        g_height = static_cast<uint32_t>(height);
     }
-    
-    float GetAspect() { return g_aspect; }
-
-	const char** GetInstanceExtensions(uint32_t* extension_count) {
-		return glfwGetRequiredInstanceExtensions(extension_count);
-	}
 
     void mouse_position_callback(GLFWwindow* window, double x_pos, double y_pos) {
         Input::HandleMouseMove(x_pos, y_pos);
@@ -88,7 +81,7 @@ namespace Window {
             double x_pos, y_pos;
             glfwGetCursorPos(window, &x_pos, &y_pos);
             Input::HandleMouseDrag(x_pos, y_pos, true);
-        } else if (action == GLFW_RELEASE) {
+        } else if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE) {
             Input::HandleMouseDrag(0, 0, false);
         }
     }

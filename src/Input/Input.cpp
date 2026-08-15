@@ -1,7 +1,6 @@
 #include "Input.h"
 #include "Core/Window.h"
 #include <glm/glm.hpp>
-#include <iostream>
 #include <algorithm>
 
 namespace Input {
@@ -9,7 +8,6 @@ namespace Input {
    glm::vec2 g_current_position(0.0f);
    glm::vec2 g_start_position(0.0f);
    glm::vec2 g_last_position(0.0f);
-   glm::vec2 g_mouse_delta(0.0f); 
 
    float g_scroll_delta = 0.0f;
    bool g_dragging = false;
@@ -18,7 +16,6 @@ namespace Input {
    static glm::vec2 ndc(float x, float y);
 
    void Update() {
-        g_mouse_delta = glm::vec2(0.0f, 0.0f); 
         g_scroll_delta = 0.0f;
         g_mouse_moving = false;
     }
@@ -29,15 +26,11 @@ namespace Input {
 
     void HandleMouseDrag(float x_pos, float y_pos, bool dragging) {
         if (dragging) {
-            std::cout << "You are dragging the mouse.\n";
-        
             glm::vec2 point = ndc(x_pos, y_pos);
             g_start_position = point;
-            g_mouse_delta = point - g_last_position; 
             g_last_position = point; 
             g_dragging = true;
         } else {
-            std::cout << "You've stopped dragging the mouse.\n";
             g_dragging = false;
         }
     }
@@ -52,7 +45,9 @@ namespace Input {
     }
 
     static glm::vec2 ndc(float x, float y) {
-        float scale = 2.0f / std::min(static_cast<float>(Window::GetWidth()), static_cast<float>(Window::GetHeight()));
-        return glm::vec2(x - Window::GetWidth() * 0.5f, Window::GetHeight() * 0.5f - y) * scale;
+        float width = static_cast<float>(Window::GetWidth());
+        float height = static_cast<float>(Window::GetHeight());
+        float scale = 2.0f / std::min(width, height);
+        return glm::vec2(x - width * 0.5f, height * 0.5f - y) * scale;
     }
 }
