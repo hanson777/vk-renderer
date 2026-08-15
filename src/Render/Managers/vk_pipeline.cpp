@@ -6,6 +6,7 @@
 #include <iostream>
 #include <vector>
 #include <cstdint>
+#include <glm/glm.hpp>
 
 namespace vk_pipeline {
 	
@@ -15,10 +16,17 @@ namespace vk_pipeline {
 	std::vector<VkPipelineShaderStageCreateInfo> g_shader_stage_create_infos;
 
 	bool Init() {
+		VkPushConstantRange range{
+			.stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
+			.offset = 0,
+			.size = sizeof(glm::mat4),
+		};
+
 		VkPipelineLayoutCreateInfo pipeline_layout_create_info{
 			.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
 			.setLayoutCount = 0,
-			.pushConstantRangeCount = 0,
+			.pushConstantRangeCount = 1,
+			.pPushConstantRanges = &range,
 		};
 
 		const VkDevice& device = vk_device::GetDevice();

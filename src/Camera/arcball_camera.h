@@ -1,8 +1,14 @@
 #pragma once
 #include <glm/glm.hpp>
-#include <glm/gtc/quaternion.hpp>
 
-namespace arcball_camera {
+namespace Arcball {
+
+    extern glm::vec3 g_position;
+    extern float g_angle;
+    extern float g_fov;
+
     void Init();
+    void Update();
     glm::quat GetCurrentRotation();
+    glm::mat4 GetViewMatrix();
 };

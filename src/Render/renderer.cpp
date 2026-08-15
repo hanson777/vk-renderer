@@ -5,8 +5,14 @@
 #include "Managers/vk_pipeline.h"
 #include "Managers/vk_sync.h"
 #include "Render/Types/Shader.h"
+#include "Camera/arcball_camera.h"
 #include <cstdint>
 #include <vector>
+#include <string>
+#include <glm/glm.hpp>
+#include <glm/ext/matrix_clip_space.hpp>
+#include <glm/ext/matrix_transform.hpp>
+#include <glm/gtc/quaternion.hpp>
 
 namespace Renderer {
 
@@ -150,7 +156,22 @@ namespace Renderer {
 			vkCmdSetScissor(command_buffer, 0, 1, &scissor);
 
 			vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vk_pipeline::g_pipeline);
-			vkCmdDraw(command_buffer, 3, 1, 0, 0);
+
+			glm::quat total_rotation = Arcball::GetCurrentRotation();
+			glm::mat4 arcball_rotation = glm::mat4_cast(total_rotation);
+
+			glm::mat4 model = glm::mat4(1.0f);
+
+			glm::mat4 view = Arcball::GetViewMatrix() * arcball_rotation;
+
+			glm::mat4 projection = glm::perspective(glm::radians(Arcball::g_fov), 800.0f / 600.0f, 0.1f, 100.0f);
+			projection[1][1] *= -1;
+
+			glm::mat4 mvp = projection * view * model;
+
+			vkCmdPushConstants(command_buffer, vk_pipeline::g_pipeline_layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &mvp);
+
+			vkCmdDraw(command_buffer, 36, 1, 0, 0);
 		}
 		vkCmdEndRendering(command_buffer);
 

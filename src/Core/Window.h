@@ -10,4 +10,6 @@ namespace Window {
     GLFWwindow* GetWindowPointer();
     uint32_t GetWidth();
     uint32_t GetHeight();
+	void SetWidth(uint32_t width);
+	void SetHeight(uint32_t height);
 }

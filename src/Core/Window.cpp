@@ -54,16 +54,26 @@ namespace Window {
 	}
     
     GLFWwindow* GetWindowPointer() { return g_handle; }
+
+    uint32_t GetWidth() { return g_width; }
+
+    void SetWidth(uint32_t width) {
+        g_width = width;
+    }
     
     uint32_t GetHeight() { return g_height; }
 
-    uint32_t GetWidth() { return g_width; }
+    void SetHeight(uint32_t height) {
+        g_height = height;
+    }
 
 	const char** GetInstanceExtensions(uint32_t* extension_count) {
 		return glfwGetRequiredInstanceExtensions(extension_count);
 	}
 
     void mouse_position_callback(GLFWwindow* window, double x_pos, double y_pos) {
+        x_pos = (2.0f * x_pos) / Window::GetWidth() - 1.0f;
+        y_pos = 1.0f - (2.0f * y_pos) / Window::GetHeight();
         Input::HandleMouseMove(x_pos, y_pos);
     }
     
@@ -75,6 +85,10 @@ namespace Window {
         if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
             double start_x_pos, start_y_pos;
             glfwGetCursorPos(window, &start_x_pos, &start_y_pos);
+
+            start_x_pos = (2.0f * start_x_pos) / Window::GetWidth() - 1.0f;
+            start_y_pos = 1.0f - (2.0f * start_y_pos) / Window::GetHeight();
+
             Input::g_start_position = { start_x_pos, start_y_pos };
             Input::HandleMouseDrag(start_x_pos, start_y_pos, true);
         } else if (action == GLFW_RELEASE) {

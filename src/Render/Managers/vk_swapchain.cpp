@@ -111,6 +111,8 @@ namespace vk_swapchain {
     void RecreateSwapchain() {
         Shutdown();
         CreateSwapchain();
+        Window::SetWidth(g_swapchain_extent.width);
+        Window::SetHeight(g_swapchain_extent.height);
     }
 
     static bool getSwapchainImages() {

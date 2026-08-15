@@ -25,19 +25,27 @@ static float3 positions[36] = float3[](
 );
 
 struct VertexOutput {
+    float3 color;
     float4 sv_position : SV_Position;
 };
+
+struct PushConstants {
+    float4x4 mvp;
+}
+
+[[vk::push_constant]]
+ConstantBuffer<PushConstants> pc;
 
 [shader("vertex")]
 VertexOutput vertMain(uint vid : SV_VertexID) {
     VertexOutput output;
-    output.sv_position = float4(positions[vid], 1.0);
+    float3 pos = positions[vid];
+    output.sv_position = mul(pc.mvp, float4(pos, 1.0));
+    output.color = (pos + 1.0f) / 2.0f;
     return output;
 }
 
 [shader("fragment")]
-float4 fragMain(VertexOutput inVert) : SV_Target
-{
-    float3 color = inVert.sv_position.xyz;
-    return float4(color, 1.0);
+float4 fragMain(VertexOutput inVert) : SV_Target {
+    return float4(inVert.color, 1.0f);
 }

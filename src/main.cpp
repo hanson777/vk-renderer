@@ -3,6 +3,7 @@
 #include "Render/Types/Shader.h"
 #include "Render/Renderer.h"
 #include "Input/Input.h"
+#include "Camera/arcball_camera.h"
 #include "Application/Application.h"
 #include <iostream>
 
@@ -12,6 +13,8 @@ int main() {
     if (!Window::Init(800, 600, "hi")) {
         return -1;
     }
+
+    Arcball::Init();
 
     if (!slang_context::InitSlangSession()) {
         return -1;
@@ -25,8 +28,9 @@ int main() {
 
     while (!Window::ShouldClose()) {
         Window::BeginFrame();
-        Input::Update();
+        Arcball::Update();
         Renderer::Render();
+        Input::Update();
     }
 
     vk_context::Shutdown();

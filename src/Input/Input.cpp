@@ -20,25 +20,25 @@ namespace Input {
         g_mouse_moving = false;
     }
 
-   bool KeyPressed(int key) {
-        return glfwGetKey(Window::GetWindowPointer(), key) == GLFW_PRESS;
-   }
+    bool KeyPressed(int key) {
+         return glfwGetKey(Window::GetWindowPointer(), key) == GLFW_PRESS;
+    }
     
     void HandleMouseDrag(float x_pos, float y_pos, bool dragging) {
         if (dragging) {
+            std::cout << "You are dragging the mouse.\n";
             g_mouse_delta = glm::vec2(x_pos, y_pos) - g_last_position; 
             g_last_position = glm::vec2(x_pos, y_pos);
             g_dragging = true;
         } else {
+            std::cout << "You've stopped dragging the mouse.\n";
             g_dragging = false;
         }
     }
 
     void HandleMouseMove(float x_pos, float y_pos) {
         g_mouse_moving = true;
-        if (g_dragging) {
-           g_current_position = glm::vec2(x_pos, y_pos); 
-        }
+        g_current_position = glm::vec2(x_pos, y_pos); 
     }
     
     void HandleScroll(float dy) {

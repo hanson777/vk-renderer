@@ -7,6 +7,7 @@ struct Shader;
 
 namespace vk_pipeline {
 
+	extern VkPipelineLayout g_pipeline_layout;
 	extern VkPipeline g_pipeline;
 
 	bool Init();
