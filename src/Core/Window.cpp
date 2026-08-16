@@ -1,6 +1,5 @@
 #include "Window.h"
 #include "Input/Input.h"
-#define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 #include <cstdint>
 #include <iostream>
