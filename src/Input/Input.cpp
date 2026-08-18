@@ -1,7 +1,7 @@
 #include "Input.h"
 #include "Core/Window.h"
+#include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
-#include <algorithm>
 
 namespace Input {
 

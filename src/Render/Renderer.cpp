@@ -124,13 +124,13 @@ namespace Renderer {
 			.imageLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
 			.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
 			.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-			.clearValue{.depthStencil{1.f, 0}},
+			.clearValue{.depthStencil{1.0f, 0}},
 		};
 
 		VkRenderingInfo rendering_info{
 			.sType = VK_STRUCTURE_TYPE_RENDERING_INFO,
 			.renderArea{
-				.offset{.x = 0, .y = 0 },
+				.offset{.x = 0, .y = 0},
 				.extent = vk_swapchain::g_swapchain_extent,
 			},
 			.layerCount = 1,

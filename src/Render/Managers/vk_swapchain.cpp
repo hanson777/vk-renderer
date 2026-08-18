@@ -64,8 +64,8 @@ namespace vk_swapchain {
     }
 
     bool CreateSwapchain() {
-        const VkPhysicalDevice physical_device = vk_device::GetPhysicalDevice();
-        const VkDevice device = vk_device::GetDevice();
+        const VkPhysicalDevice& physical_device = vk_device::GetPhysicalDevice();
+        const VkDevice& device = vk_device::GetDevice();
         const VkSurfaceKHR surface = vk_instance::GetSurface();
 
         VkSurfaceCapabilitiesKHR surface_caps{};
@@ -114,8 +114,8 @@ namespace vk_swapchain {
     }
 
     static bool getSwapchainImages() {
-        VkDevice device = vk_device::GetDevice();
-        VkPhysicalDevice physical_device = vk_device::GetPhysicalDevice();
+        const VkDevice& device = vk_device::GetDevice();
+        const VkPhysicalDevice& physical_device = vk_device::GetPhysicalDevice();
 
         uint32_t image_count = 0;
         vkGetSwapchainImagesKHR(device, g_swapchain, &image_count, nullptr);
@@ -148,8 +148,8 @@ namespace vk_swapchain {
     }
 
     static bool getDepthImages() {
-        VkDevice device = vk_device::GetDevice();
-        VkPhysicalDevice physical_device = vk_device::GetPhysicalDevice();
+        const VkDevice& device = vk_device::GetDevice();
+        const VkPhysicalDevice& physical_device = vk_device::GetPhysicalDevice();
 
         std::vector<VkFormat> depth_formats{ VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT };
         for (const VkFormat& format : depth_formats) {

@@ -79,7 +79,7 @@ namespace vk_sync {
 	}
 
 	void Shutdown() {
-		const VkDevice device = vk_device::GetDevice();
+		const VkDevice& device = vk_device::GetDevice();
 		if (g_timeline_semaphore != VK_NULL_HANDLE) {
 			vkDestroySemaphore(device, g_timeline_semaphore, nullptr);
 		}
@@ -92,8 +92,13 @@ namespace vk_sync {
 			if (semaphore != VK_NULL_HANDLE) vkDestroySemaphore(device, semaphore, nullptr);
 		}
 
-		for (VkCommandPool& cmd_pool : g_command_pools) {
-			if (cmd_pool != VK_NULL_HANDLE) vkDestroyCommandPool(device, cmd_pool, nullptr);
+		for (int i = 0; i < g_command_buffers.size(); i++) {
+			if (g_command_buffers[i] != VK_NULL_HANDLE) vkFreeCommandBuffers(device, g_command_pools[i], 1, &g_command_buffers[i]);
 		}
+
+		for (VkCommandPool& pool : g_command_pools) {
+			if (pool != VK_NULL_HANDLE) vkDestroyCommandPool(device, pool, nullptr);
+		}
+
 	}
 }
