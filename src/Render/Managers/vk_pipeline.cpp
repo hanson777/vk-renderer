@@ -135,7 +135,7 @@ namespace vk_pipeline {
 	}
 
 	void Shutdown() {
-		const VkDevice device = vk_device::GetDevice();
+		const VkDevice& device = vk_device::GetDevice();
 		if (g_pipeline_layout != VK_NULL_HANDLE) {
 			vkDestroyPipelineLayout(device, g_pipeline_layout, nullptr);
 		}
