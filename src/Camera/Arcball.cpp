@@ -3,12 +3,13 @@
 #include "Core/Window.h"
 #include <glm/glm.hpp>
 #include <glm/gtx/quaternion.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 #include <cmath>
 #include <algorithm>
 
 namespace Arcball {
 
-    glm::vec3 g_position{0.0f, 0.0f, 3.0f};
+    glm::vec3 g_position(0.0f, 0.0f, 3.0f);
 
     glm::quat g_rotation = glm::identity<glm::quat>();
 
@@ -35,7 +36,7 @@ namespace Arcball {
     }
 
     glm::mat4 GetViewMatrix() {
-        return g_view;
+        return g_view * glm::mat4_cast(g_rotation);
     }
 
     static glm::vec3 project_to_sphere(glm::vec2 p) {

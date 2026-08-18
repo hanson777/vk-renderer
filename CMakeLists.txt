@@ -95,6 +95,7 @@ add_executable(${PROJECT_NAME}
   src/Application/Application.cpp
   src/Input/Input.cpp
   src/Camera/Arcball.cpp
+  src/Camera/Orbit.cpp
 )
 
 add_custom_target(run

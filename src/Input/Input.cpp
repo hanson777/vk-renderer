@@ -25,7 +25,7 @@ namespace Input {
 
     void HandleMouseDrag(float x_pos, float y_pos, bool dragging) {
         if (dragging) {
-            glm::vec2 point{x_pos, y_pos};
+            glm::vec2 point(x_pos, y_pos);
             g_last_position = point;
             g_current_position = point;
             g_dragging = true;
