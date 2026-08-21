@@ -7,7 +7,7 @@ namespace Window {
 	void BeginFrame();
 	bool ShouldClose();
 	void Shutdown();
-    GLFWwindow* GetWindowPointer();
+    GLFWwindow* GetHandle();
     uint32_t GetWidth();
     uint32_t GetHeight();
 }

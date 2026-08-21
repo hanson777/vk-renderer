@@ -4,6 +4,7 @@
 #include "Render/Renderer.h"
 #include "Input/Input.h"
 #include "Camera/Arcball.h"
+#include "Camera/Orbit.h"
 #include "Application/Application.h"
 #include <iostream>
 
@@ -26,7 +27,7 @@ int main() {
 
     while (!Window::ShouldClose()) {
         Window::BeginFrame();
-        Arcball::Update();
+        Orbit::Update();
         Renderer::Render();
         Input::Update();
     }

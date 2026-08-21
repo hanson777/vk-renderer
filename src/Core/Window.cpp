@@ -56,7 +56,7 @@ namespace Window {
 		glfwTerminate();
 	}
     
-    GLFWwindow* GetWindowPointer() { return g_handle; }
+    GLFWwindow* GetHandle() { return g_handle; }
 
     uint32_t GetWidth() { return g_width; }
 
@@ -79,11 +79,10 @@ namespace Window {
         if (button != GLFW_MOUSE_BUTTON_LEFT) return;
 
         if (action == GLFW_PRESS) {
-            double x, y;
-            glfwGetCursorPos(window, &x, &y);
-            Input::HandleMouseDrag(x, y, true);
-        } else if (action == GLFW_RELEASE) {
-            Input::HandleMouseDrag(0, 0, false);
+            Input::HandleMouseDrag(true);
+        }
+        else if (action == GLFW_RELEASE) {
+            Input::HandleMouseDrag(false);
         }
     }
 }

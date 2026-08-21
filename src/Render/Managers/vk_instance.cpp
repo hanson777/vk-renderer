@@ -104,7 +104,7 @@ namespace vk_instance {
             return false;
         }
         
-        if (glfwCreateWindowSurface(g_instance, Window::GetWindowPointer(), nullptr, &g_surface) != VK_SUCCESS) {
+        if (glfwCreateWindowSurface(g_instance, Window::GetHandle(), nullptr, &g_surface) != VK_SUCCESS) {
             std::cerr << "[ERROR::INSTANCE_MANAGER] failed to create surface\n";
             return false;
         }

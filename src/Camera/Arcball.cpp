@@ -16,7 +16,7 @@ namespace Arcball {
     float g_radius = 1.0f;
     float g_fov = 45.0f;
 
-    glm::mat4 g_view = glm::lookAt(g_position, g_position + glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+    glm::mat4 g_view = glm::lookAtRH(g_position, glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 
     static glm::vec3 project_to_sphere(glm::vec2 p);
     static glm::vec2 ndc(glm::vec2 p);

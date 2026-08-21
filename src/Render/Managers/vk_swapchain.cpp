@@ -225,7 +225,7 @@ namespace vk_swapchain {
             return capabilities.currentExtent;
         }
         int width, height;
-        glfwGetFramebufferSize(Window::GetWindowPointer(), &width, &height);
+        glfwGetFramebufferSize(Window::GetHandle(), &width, &height);
 
         return {
             std::clamp<uint32_t>(width, capabilities.minImageExtent.width, capabilities.maxImageExtent.width),

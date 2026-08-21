@@ -6,6 +6,7 @@
 #include "Managers/vk_sync.h"
 #include "Render/Types/Shader.h"
 #include "Camera/Arcball.h"
+#include "Camera/Orbit.h"
 #include "Core/Window.h"
 #include <cstdint>
 #include <vector>
@@ -158,8 +159,8 @@ namespace Renderer {
 			vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vk_pipeline::g_pipeline);
 
 			glm::mat4 model = glm::mat4(1.0f);
-			glm::mat4 view = Arcball::GetViewMatrix();
-			glm::mat4 projection = glm::perspective(glm::radians(Arcball::g_fov), (float)Window::GetWidth() / Window::GetHeight(), 0.1f, 100.0f);
+			glm::mat4 view = Orbit::GetViewMatrix();
+			glm::mat4 projection = glm::perspective(glm::radians(Orbit::g_fov), (float)Window::GetWidth() / Window::GetHeight(), 0.1f, 100.0f);
 			projection[1][1] *= -1;
 
 			glm::mat4 mvp = projection * view * model;
