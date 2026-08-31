@@ -1,5 +1,5 @@
 #include "Orbit.h"
-#include "Input/Input.h"
+#include "Core/Input.h"
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <algorithm>

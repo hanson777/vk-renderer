@@ -1,5 +1,5 @@
 #include "Window.h"
-#include "Input/Input.h"
+#include "Core/Input.h"
 #include <GLFW/glfw3.h>
 #include <cstdint>
 #include <iostream>

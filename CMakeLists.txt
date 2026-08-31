@@ -34,13 +34,6 @@ FetchContent_Declare(
     DOWNLOAD_NO_EXTRACT TRUE
 )
 
-# tinyobjloader
-FetchContent_Declare(
-    tinyobjloader
-    URL https://raw.githubusercontent.com/tinyobjloader/tinyobjloader/release/tiny_obj_loader.h
-    DOWNLOAD_NO_EXTRACT TRUE
-)
-
 # vulkan
 find_package(Vulkan REQUIRED)
 # Prevent CMake from stripping the Vulkan include path from compile_commands.json.
@@ -76,13 +69,18 @@ set(SLANG_ENABLE_GFX OFF CACHE BOOL "" FORCE)
 set(SLANG_ENABLE_EXAMPLES OFF CACHE BOOL "" FORCE)
 set(SLANG_ENABLE_TESTS OFF CACHE BOOL "" FORCE)
 
-FetchContent_MakeAvailable(glfw glm stb_image tinyobjloader volk VulkanMemoryAllocator slang)
+FetchContent_MakeAvailable(glfw glm stb_image volk VulkanMemoryAllocator slang)
 
 add_executable(${PROJECT_NAME}
   src/main.cpp
-  defines/volk_implementation.cpp
-  defines/vma_implementation.cpp
+  external/volk.cpp
+  external/vma.cpp
+  external/stb_image.cpp
   src/Core/Window.cpp
+  src/Core/Input.cpp
+  src/Application/Application.cpp
+  src/Camera/Arcball.cpp
+  src/Camera/Orbit.cpp
   src/Render/vk_context.cpp
   src/Render/Managers/vk_instance.cpp
   src/Render/Managers/vk_device.cpp
@@ -92,10 +90,6 @@ add_executable(${PROJECT_NAME}
   src/Render/Managers/vk_sync.cpp
   src/Render/Types/Shader.cpp
   src/Render/Renderer.cpp
-  src/Application/Application.cpp
-  src/Input/Input.cpp
-  src/Camera/Arcball.cpp
-  src/Camera/Orbit.cpp
 )
 
 add_custom_target(run
@@ -106,7 +100,6 @@ add_custom_target(run
 
 target_include_directories(${PROJECT_NAME} PRIVATE
   ${stb_image_SOURCE_DIR}
-  ${tinyobjloader_SOURCE_DIR}
   ${CMAKE_SOURCE_DIR}/src
 )
 
@@ -120,6 +113,7 @@ GLFW_INCLUDE_NONE
 target_link_libraries(${PROJECT_NAME} PRIVATE
     glfw
     glm::glm
+    stb_image
     volk
     GPUOpen::VulkanMemoryAllocator
     slang

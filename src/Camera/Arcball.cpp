@@ -1,5 +1,5 @@
 #include "Arcball.h"
-#include "Input/Input.h"
+#include "Core/Input.h"
 #include "Core/Window.h"
 #include <glm/glm.hpp>
 #include <glm/gtx/quaternion.hpp>
