@@ -7,6 +7,8 @@
 #include "Render/Types/Shader.h"
 #include "Camera/Orbit.h"
 #include "Core/Window.h"
+#include "Render/Types/vk_buffer.h"
+#include "Managers/vk_memory.h"
 #include <cstdint>
 #include <vector>
 #include <string>
@@ -17,6 +19,38 @@ namespace Renderer {
 
 	uint32_t g_frame_count = 0;
 	uint64_t g_next_signal_value = vk_sync::MAX_FRAMES_IN_FLIGHT + 1;
+
+    struct Scene {
+        glm::mat4 mvp;
+        std::array<Buffer, 2> buffers;
+    } scene;
+
+    struct Cube { 
+        glm::mat4 model_matrix;
+        std::array<Buffer, 2> buffers;
+    } cube;
+
+    struct PushConstantBlock {
+        uint64_t scene_ref;
+        uint64_t model_ref;
+    };
+
+    void PrepareUniformBuffers() {
+        for (uint32_t i = 0; i < 2; i++) {
+            scene.buffers[i] = CreateBuffer(VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, sizeof(glm::mat4), true, VMA_MEMORY_USAGE_AUTO); 
+            vmaMapMemory(vk_memory::GetAllocator(), scene.buffers[i].allocation, &scene.buffers[i].mapped);
+
+            cube.buffers[i] = CreateBuffer(VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, sizeof(glm::mat4), true, VMA_MEMORY_USAGE_AUTO); 
+            vmaMapMemory(vk_memory::GetAllocator(), cube.buffers[i].allocation, &cube.buffers[i].mapped);
+        }
+    }
+
+    void UpdateUniformBuffers() {
+        glm::mat4 projection = glm::perspective(glm::radians(Orbit::g_fov), (float)Window::GetWidth() / Window::GetHeight(), 0.1f, 100.0f);
+        projection[1][1] *= -1;
+        scene.mvp = glm::mat4(1.0f) * projection * Orbit::GetViewMatrix();
+        memcpy(scene.buffers[g_frame_count % vk_sync::MAX_FRAMES_IN_FLIGHT].mapped, &scene, sizeof(glm::mat4));
+    }
 
 	void Render() {
 		const VkDevice& device = vk_device::GetDevice();
@@ -156,16 +190,19 @@ namespace Renderer {
 
 			vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vk_pipeline::g_pipeline);
 
-			glm::mat4 model = glm::mat4(1.0f);
-			glm::mat4 view = Orbit::GetViewMatrix();
-			glm::mat4 projection = glm::perspective(glm::radians(Orbit::g_fov), (float)Window::GetWidth() / Window::GetHeight(), 0.1f, 100.0f);
-			projection[1][1] *= -1;
+            PushConstantBlock refs{};
+            refs.scene_ref = scene.buffers[g_frame_count % vk_sync::MAX_FRAMES_IN_FLIGHT].address;
+            refs.model_ref = cube.buffers[g_frame_count % vk_sync::MAX_FRAMES_IN_FLIGHT].address;
 
-			glm::mat4 mvp = projection * view * model;
+            vkCmdPushConstants(command_buffer, vk_pipeline::g_pipeline_layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstantBlock), &refs);
 
-			vkCmdPushConstants(command_buffer, vk_pipeline::g_pipeline_layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &mvp);
+            glm::mat4 projection = glm::perspective(glm::radians(Orbit::g_fov), (float)Window::GetWidth() / Window::GetHeight(), 0.1f, 100.0f);
+            projection[1][1] *= -1;
+            scene.mvp = glm::mat4(1.0f) * projection * Orbit::GetViewMatrix();
+            memcpy(scene.buffers[g_frame_count % vk_sync::MAX_FRAMES_IN_FLIGHT].mapped, &scene, sizeof(glm::mat4));
 
-			vkCmdDraw(command_buffer, 36, 1, 0, 0);
+            // replace this with a vertex array length
+            vkCmdDraw(command_buffer, 36, 1, 0, 0);
 		}
 		vkCmdEndRendering(command_buffer);
 

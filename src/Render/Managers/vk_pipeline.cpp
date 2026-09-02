@@ -15,11 +15,16 @@ namespace vk_pipeline {
 	std::vector<Shader> g_shaders;
 	std::vector<VkPipelineShaderStageCreateInfo> g_shader_stage_create_infos;
 
+    struct PushConstantBlock {
+        uint64_t scene_ref;
+        uint64_t model_ref;
+    };
+
 	bool Init() {
 		VkPushConstantRange range{
 			.stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
 			.offset = 0,
-			.size = sizeof(glm::mat4),
+			.size = sizeof(PushConstantBlock),
 		};
 
 		VkPipelineLayoutCreateInfo pipeline_layout_create_info{

@@ -27,13 +27,6 @@ FetchContent_Declare(
     GIT_SHALLOW    TRUE
 )
 
-# stb_image
-FetchContent_Declare(
-    stb_image
-    URL https://raw.githubusercontent.com/nothings/stb/master/stb_image.h
-    DOWNLOAD_NO_EXTRACT TRUE
-)
-
 # vulkan
 find_package(Vulkan REQUIRED)
 # Prevent CMake from stripping the Vulkan include path from compile_commands.json.
@@ -69,51 +62,52 @@ set(SLANG_ENABLE_GFX OFF CACHE BOOL "" FORCE)
 set(SLANG_ENABLE_EXAMPLES OFF CACHE BOOL "" FORCE)
 set(SLANG_ENABLE_TESTS OFF CACHE BOOL "" FORCE)
 
-FetchContent_MakeAvailable(glfw glm stb_image volk VulkanMemoryAllocator slang)
+FetchContent_MakeAvailable(glfw glm volk VulkanMemoryAllocator slang)
 
 add_executable(${PROJECT_NAME}
-  src/main.cpp
-  external/volk.cpp
-  external/vma.cpp
-  external/stb_image.cpp
-  src/Core/Window.cpp
-  src/Core/Input.cpp
-  src/Application/Application.cpp
-  src/Camera/Arcball.cpp
-  src/Camera/Orbit.cpp
-  src/Render/vk_context.cpp
-  src/Render/Managers/vk_instance.cpp
-  src/Render/Managers/vk_device.cpp
-  src/Render/Managers/vk_memory.cpp
-  src/Render/Managers/vk_swapchain.cpp
-  src/Render/Managers/vk_pipeline.cpp
-  src/Render/Managers/vk_sync.cpp
-  src/Render/Types/Shader.cpp
-  src/Render/Renderer.cpp
+    src/main.cpp
+    external/volk.cpp
+    external/vma.cpp
+    external/stb_image.cpp
+    external/tiny_gltf.cpp
+    src/Core/Window.cpp
+    src/Core/Input.cpp
+    src/Application/Application.cpp
+    src/Camera/Arcball.cpp
+    src/Camera/Orbit.cpp
+    src/Render/vk_context.cpp
+    src/Render/Managers/vk_instance.cpp
+    src/Render/Managers/vk_device.cpp
+    src/Render/Managers/vk_memory.cpp
+    src/Render/Managers/vk_swapchain.cpp
+    src/Render/Managers/vk_pipeline.cpp
+    src/Render/Managers/vk_sync.cpp
+    src/Render/Types/Shader.cpp
+    src/Render/Types/vk_buffer.cpp
+    src/Render/Renderer.cpp
 )
 
 add_custom_target(run
-  COMMAND vk-renderer
-  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/src
-  DEPENDS vk-renderer
+    COMMAND vk-renderer
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/src
+    DEPENDS vk-renderer
 )
 
 target_include_directories(${PROJECT_NAME} PRIVATE
-  ${stb_image_SOURCE_DIR}
-  ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_SOURCE_DIR}/external
 )
 
 add_compile_definitions(
-GLM_FORCE_DEPTH_ZERO_TO_ONE 
-GLM_FORCE_RADIANS 
-GLM_ENABLE_EXPERIMENTAL
-GLFW_INCLUDE_NONE
+    GLM_FORCE_DEPTH_ZERO_TO_ONE 
+    GLM_FORCE_RADIANS 
+    GLM_ENABLE_EXPERIMENTAL
+    GLFW_INCLUDE_NONE
 )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
     glfw
     glm::glm
-    stb_image
     volk
     GPUOpen::VulkanMemoryAllocator
     slang

@@ -29,9 +29,14 @@ struct VertexOutput {
     float4 sv_position : SV_Position;
 };
 
-struct PushConstants {
+struct MatrixReference {
     float4x4 mvp;
-}
+};
+
+struct PushConstants {
+    MatrixReference* scene_ref;
+    MatrixReference* model_ref;
+};
 
 [[vk::push_constant]]
 ConstantBuffer<PushConstants> pc;
@@ -40,7 +45,7 @@ ConstantBuffer<PushConstants> pc;
 VertexOutput vertMain(uint vid : SV_VertexID) {
     VertexOutput output;
     float3 pos = positions[vid];
-    output.sv_position = mul(pc.mvp, float4(pos, 1.0));
+    output.sv_position = mul(pc.scene_ref.mvp, float4(pos, 1.0));
     output.color = (pos + 1.0f) / 2.0f;
     return output;
 }

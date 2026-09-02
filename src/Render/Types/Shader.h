@@ -19,9 +19,10 @@ struct Shader {
 	Shader(const std::string& filename, const std::string& entry_point_name, const ShaderStage stage);
 	void LoadModule(const std::string& filename, const std::string& entry_point_name);
 
-	VkShaderModuleCreateInfo m_module_create_info{ .sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO };
 	std::string m_entry_point;
 	const char* m_spirv_entry_point = "main";
+
+	VkShaderModuleCreateInfo m_module_create_info{ .sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO };
 	VkShaderStageFlagBits m_stage = VK_SHADER_STAGE_ALL;
 	Slang::ComPtr<slang::IBlob> m_spirv;
 

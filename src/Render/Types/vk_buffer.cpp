@@ -1,11 +1,10 @@
-#pragma once
-#include "Render/Types/Buffer.h"
+#include "Render/Types/vk_buffer.h"
 #include "Render/vk_common.h"
 #include "Render/Managers/vk_memory.h"
 #include "Render/Managers/vk_device.h"
 #include <iostream>
 
-Buffer createBuffer(VkBufferUsageFlags usage, size_t size, bool staging, VmaMemoryUsage memory_usage) {
+Buffer CreateBuffer(VkBufferUsageFlags usage, size_t size, bool mappable, VmaMemoryUsage memory_usage) {
     VkBufferCreateInfo buffer_create_info{
         .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
         .size = size,
@@ -14,7 +13,7 @@ Buffer createBuffer(VkBufferUsageFlags usage, size_t size, bool staging, VmaMemo
     };
 
     VmaAllocationCreateInfo alloc_create_info{
-        .flags = staging ? VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT : 0u,
+        .flags = mappable ? VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT : 0u,
         .usage = memory_usage,
     };
 
@@ -32,5 +31,5 @@ Buffer createBuffer(VkBufferUsageFlags usage, size_t size, bool staging, VmaMemo
         buffer.address = vkGetBufferDeviceAddress(vk_device::GetDevice(), &address_info);
     }
 
-    return buffer;
+    return std::move(buffer);
 }

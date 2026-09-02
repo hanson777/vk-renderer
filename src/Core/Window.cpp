@@ -46,6 +46,7 @@ namespace Window {
 	
 	void BeginFrame() {
 		glfwPollEvents();
+        if (glfwGetKey(g_handle, GLFW_KEY_ESCAPE) == GLFW_PRESS) glfwSetWindowShouldClose(g_handle, true);
 	}
 
 	bool ShouldClose() {
