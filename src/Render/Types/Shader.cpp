@@ -24,19 +24,29 @@ namespace slang_context {
             return false;
         }
 
-        slang::TargetDesc target_desc{
-            .format = SLANG_SPIRV,
-            .profile = g_slang_global_session->findProfile("spirv_1_4"),
-        };
-
         std::array<const char*, 1> search_paths = { "Shaders/" };
 
         slang::CompilerOptionEntry spirv_option{
             .name = slang::CompilerOptionName::EmitSpirvDirectly,
-            .value = slang::CompilerOptionValueKind::Int,
+            .value{.intValue0 = 1}, 
         };
 
-        std::array<slang::CompilerOptionEntry, 1> compiler_option_entries = { spirv_option };
+        slang::CompilerOptionEntry scalar_option{
+            .name = slang::CompilerOptionName::GLSLForceScalarLayout,
+            .value{.intValue0 = 1}, 
+        };
+
+        std::vector<slang::CompilerOptionEntry> compiler_options;
+        compiler_options.push_back(spirv_option);
+        compiler_options.push_back(scalar_option);
+
+        slang::TargetDesc target_desc{
+            .format = SLANG_SPIRV,
+            .profile = g_slang_global_session->findProfile("spirv_1_4"),
+            .flags = SLANG_TARGET_FLAG_GENERATE_SPIRV_DIRECTLY,
+            .compilerOptionEntries = compiler_options.data(),
+            .compilerOptionEntryCount = static_cast<uint32_t>(compiler_options.size()),
+        };
 
         slang::SessionDesc session_desc{
             .targets = &target_desc,
@@ -44,8 +54,8 @@ namespace slang_context {
             .defaultMatrixLayoutMode = SLANG_MATRIX_LAYOUT_COLUMN_MAJOR,
             .searchPaths = search_paths.data(),
             .searchPathCount = static_cast<uint32_t>(search_paths.size()),
-            .compilerOptionEntries = compiler_option_entries.data(),
-            .compilerOptionEntryCount = static_cast<uint32_t>(compiler_option_entries.size()),
+            .compilerOptionEntries = compiler_options.data(),
+            .compilerOptionEntryCount = static_cast<uint32_t>(compiler_options.size()),
         };
 
         if (SLANG_FAILED(g_slang_global_session->createSession(session_desc, g_slang_session.writeRef()))) {

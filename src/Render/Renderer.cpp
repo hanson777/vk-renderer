@@ -1,30 +1,29 @@
 #include "Renderer.h"
-#include "vk_common.h"
-#include "Managers/vk_device.h"
-#include "Managers/vk_swapchain.h"
-#include "Managers/vk_pipeline.h"
-#include "Managers/vk_sync.h"
+#include "Render/vk_common.h"
+#include "Render/Managers/vk_device.h"
+#include "Render/Managers/vk_swapchain.h"
+#include "Render/Managers/vk_pipeline.h"
+#include "Render/Managers/vk_sync.h"
 #include "Render/Types/Shader.h"
 #include "Camera/Orbit.h"
 #include "Core/Window.h"
 #include "Render/Types/vk_buffer.h"
+#include "Render/Types/Scene.h"
+#include "Render/Types/MeshData.h"
 #include <cstdint>
 #include <vector>
 #include <array>
 #include <string>
 #include <glm/glm.hpp>
 #include <glm/ext/matrix_clip_space.hpp>
-#include <iostream>
 
 namespace Renderer {
 
 	uint32_t g_frame_count = 0;
-	uint64_t g_next_signal_value = vk_sync::MAX_FRAMES_IN_FLIGHT + 1;
+	uint64_t g_next_signal_value = MAX_FRAMES_IN_FLIGHT + 1;
 
-    struct Scene {
-        glm::mat4 mvp;
-        std::array<Buffer, 2> buffers;
-    } scene;
+    Scene scene;
+    MeshData mesh_data;
 
     struct Cube { 
         glm::mat4 model_matrix;
@@ -33,32 +32,55 @@ namespace Renderer {
 
     struct PushConstantBlock {
         uint64_t scene_ref;
+        uint64_t vertex_ref;
     };
 
     void Shutdown() {
+        vkDeviceWaitIdle(vk_device::GetDevice());
         for (auto& buffer : scene.buffers) {
-            buffer.Unmap();
-            buffer.Destroy();
+            buffer.unmap();
+            buffer.destroy();
         }
+        mesh_data.vertex_buffer.unmap();
+        mesh_data.vertex_buffer.destroy();
+        mesh_data.index_buffer.unmap();
+        mesh_data.index_buffer.destroy();
     }
 
     void PrepareUniformBuffers() {
+        const std::vector<glm::vec3> vertices = {
+            {-0.5f, -0.5f, -0.5f}, {-0.5f, -0.5f,  0.5f}, {-0.5f,  0.5f,  0.5f}, {-0.5f,  0.5f, -0.5f},
+            { 0.5f, -0.5f,  0.5f}, { 0.5f, -0.5f, -0.5f}, { 0.5f,  0.5f, -0.5f}, { 0.5f,  0.5f,  0.5f},
+            {-0.5f, -0.5f, -0.5f}, { 0.5f, -0.5f, -0.5f}, { 0.5f, -0.5f,  0.5f}, {-0.5f, -0.5f,  0.5f},
+            {-0.5f,  0.5f,  0.5f}, { 0.5f,  0.5f,  0.5f}, { 0.5f,  0.5f, -0.5f}, {-0.5f,  0.5f, -0.5f},
+            { 0.5f, -0.5f, -0.5f}, {-0.5f, -0.5f, -0.5f}, {-0.5f,  0.5f, -0.5f}, { 0.5f,  0.5f, -0.5f},
+            {-0.5f, -0.5f,  0.5f}, { 0.5f, -0.5f,  0.5f}, { 0.5f,  0.5f,  0.5f}, {-0.5f,  0.5f,  0.5f}
+        };
+        const std::vector<uint32_t> indices = {
+            0,  1,  2,  0,  2,  3,
+            4,  5,  6,  4,  6,  7,
+            8,  9,  10, 8,  10, 11,
+            12, 13, 14, 12, 14, 15,
+            16, 17, 18, 16, 18, 19,
+            20, 21, 22, 20, 22, 23
+        };
+        CreateBuffer(VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, sizeof(vertices[0]) * vertices.size(), true, VMA_MEMORY_USAGE_AUTO, &mesh_data.vertex_buffer);
+        CreateBuffer(VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, sizeof(indices[0]) * indices.size(), true, VMA_MEMORY_USAGE_AUTO, &mesh_data.index_buffer);
+        mesh_data.vertex_buffer.map();
+        mesh_data.index_buffer.map();
+        memcpy(mesh_data.vertex_buffer.mapped, vertices.data(), sizeof(vertices[0]) * vertices.size());
+        memcpy(mesh_data.index_buffer.mapped, indices.data(), sizeof(indices[0]) * indices.size());
         for (uint32_t i = 0; i < 2; i++) {
-            scene.buffers[i] = CreateBuffer(VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, sizeof(glm::mat4), true, VMA_MEMORY_USAGE_AUTO); 
-            if (VkResult result = scene.buffers[i].Map(); result != VK_SUCCESS) {
-                std::cout << "[ERROR::Buffer::Map] failed with result " << result << '\n';
-            }
-
-            // cube.buffers[i] = CreateBuffer(VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, sizeof(glm::mat4), true, VMA_MEMORY_USAGE_AUTO); 
-            // vmaMapMemory(vk_memory::GetAllocator(), cube.buffers[i].allocation, &cube.buffers[i].mapped);
+            CreateBuffer(VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, sizeof(glm::mat4), true, VMA_MEMORY_USAGE_AUTO, &scene.buffers[i]); 
+            scene.buffers[i].map();
         }
     }
 
-    void UpdateUniformBuffers() {
+    void UpdateUniformBuffers(int frame_index) {
         glm::mat4 projection = glm::perspective(glm::radians(Orbit::g_fov), (float)Window::GetWidth() / Window::GetHeight(), 0.1f, 100.0f);
         projection[1][1] *= -1;
         scene.mvp = glm::mat4(1.0f) * projection * Orbit::GetViewMatrix();
-        memcpy(scene.buffers[g_frame_count % vk_sync::MAX_FRAMES_IN_FLIGHT].mapped, &scene, sizeof(glm::mat4));
+        memcpy(scene.buffers[frame_index].mapped, &scene.mvp, sizeof(glm::mat4));
     }
 
 	void Render() {
@@ -70,9 +92,9 @@ namespace Renderer {
 			vk_swapchain::g_recreate_swapchain = false;
 		}
 
-		const uint32_t frame_index = g_frame_count % vk_sync::MAX_FRAMES_IN_FLIGHT;
+		const uint32_t frame_index = g_frame_count % MAX_FRAMES_IN_FLIGHT;
 		const uint64_t signal_value = g_next_signal_value;
-		const uint64_t wait_value = signal_value - vk_sync::MAX_FRAMES_IN_FLIGHT;
+		const uint64_t wait_value = signal_value - MAX_FRAMES_IN_FLIGHT;
 
 		// wait for semaphore (replaces wait for fence)
 		VkSemaphoreWaitInfo wait_info{
@@ -199,18 +221,20 @@ namespace Renderer {
 
 			vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vk_pipeline::g_pipeline);
 
+            Buffer& vertex_buffer = mesh_data.vertex_buffer;
+            Buffer& index_buffer = mesh_data.index_buffer;
+
             PushConstantBlock refs{};
             refs.scene_ref = scene.buffers[frame_index].address;
+            refs.vertex_ref = vertex_buffer.address;
 
             vkCmdPushConstants(command_buffer, vk_pipeline::g_pipeline_layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstantBlock), &refs);
 
-            glm::mat4 projection = glm::perspective(glm::radians(Orbit::g_fov), (float)Window::GetWidth() / Window::GetHeight(), 0.1f, 100.0f);
-            projection[1][1] *= -1;
-            scene.mvp = glm::mat4(1.0f) * projection * Orbit::GetViewMatrix();
-            memcpy(scene.buffers[frame_index].mapped, &scene, sizeof(glm::mat4));
+            UpdateUniformBuffers(frame_index);
 
-            // replace this with a vertex array length
-            vkCmdDraw(command_buffer, 36, 1, 0, 0);
+            // replace this with a index array length
+            vkCmdBindIndexBuffer(command_buffer, index_buffer.buffer, 0, VK_INDEX_TYPE_UINT32);
+            vkCmdDrawIndexed(command_buffer, 36, 1, 0, 0, 0);
 		}
 		vkCmdEndRendering(command_buffer);
 

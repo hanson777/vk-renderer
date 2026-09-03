@@ -2,27 +2,26 @@
 #include "Render/vk_common.h"
 #include "Render/Managers/vk_memory.h"
 #include "Render/Managers/vk_device.h"
-#include <iostream>
 
-VkResult Buffer::Map() {
+VkResult Buffer::map() {
     return vmaMapMemory(vk_memory::GetAllocator(), allocation, &mapped);
 }
 
-void Buffer::Unmap() {
+void Buffer::unmap() {
     if (mapped != nullptr) {
         return vmaUnmapMemory(vk_memory::GetAllocator(), allocation);
         mapped = nullptr;
     }
 }
 
-void Buffer::Destroy() {
+void Buffer::destroy() {
     if (buffer) {
         vmaDestroyBuffer(vk_memory::GetAllocator(), buffer, allocation);
         buffer = VK_NULL_HANDLE;
     }
 }
 
-Buffer CreateBuffer(VkBufferUsageFlags usage, size_t size, bool mappable, VmaMemoryUsage memory_usage) {
+VkResult CreateBuffer(VkBufferUsageFlags usage, size_t size, bool mappable, VmaMemoryUsage memory_usage, Buffer* pBuffer) {
     VkBufferCreateInfo buffer_create_info{
         .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
         .size = size,
@@ -35,19 +34,16 @@ Buffer CreateBuffer(VkBufferUsageFlags usage, size_t size, bool mappable, VmaMem
         .usage = memory_usage,
     };
 
-    Buffer buffer;
-    if (vmaCreateBuffer(vk_memory::GetAllocator(), &buffer_create_info, &alloc_create_info, &buffer.buffer, &buffer.allocation, nullptr) != VK_SUCCESS) {
-        std::cerr << "[ERROR::createBuffer] failed to create buffer\n";
-        return buffer;
+    if (VkResult result = vmaCreateBuffer(vk_memory::GetAllocator(), &buffer_create_info, &alloc_create_info, &pBuffer->buffer, &pBuffer->allocation, nullptr); result != VK_SUCCESS) {
+        return result;
     }
 
     if (usage & VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT) {
         VkBufferDeviceAddressInfo address_info{
             .sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO,
-            .buffer = buffer.buffer,
+            .buffer = pBuffer->buffer,
         };
-        buffer.address = vkGetBufferDeviceAddress(vk_device::GetDevice(), &address_info);
+        pBuffer->address = vkGetBufferDeviceAddress(vk_device::GetDevice(), &address_info);
     }
-
-    return std::move(buffer);
+    return VK_SUCCESS;
 }

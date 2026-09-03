@@ -109,7 +109,8 @@ namespace vk_device {
 		if (!supported_features_13.dynamicRendering     || !supported_features_13.synchronization2 || 
 			!supported_features_12.timelineSemaphore    || !supported_features_12.separateDepthStencilLayouts ||
 			!supported_features_12.bufferDeviceAddress  || !supported_features_14.maintenance5 || 
-			!supported_features_11.shaderDrawParameters || !supported_features.features.multiDrawIndirect) {
+			!supported_features_11.shaderDrawParameters || !supported_features.features.multiDrawIndirect ||
+            !supported_features_12.scalarBlockLayout) {
 			std::cerr << "[ERROR::DEVICE_MANAGER] physical device doesn't meet feature requirements\n";
 			return false;
 		}
@@ -133,6 +134,7 @@ namespace vk_device {
 			.pNext = &features13,
 			.separateDepthStencilLayouts = VK_TRUE,
 			.timelineSemaphore = VK_TRUE,
+            .scalarBlockLayout = VK_TRUE,
 			.bufferDeviceAddress = VK_TRUE,
 		};
 
