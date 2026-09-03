@@ -4,6 +4,24 @@
 #include "Render/Managers/vk_device.h"
 #include <iostream>
 
+VkResult Buffer::Map() {
+    return vmaMapMemory(vk_memory::GetAllocator(), allocation, &mapped);
+}
+
+void Buffer::Unmap() {
+    if (mapped != nullptr) {
+        return vmaUnmapMemory(vk_memory::GetAllocator(), allocation);
+        mapped = nullptr;
+    }
+}
+
+void Buffer::Destroy() {
+    if (buffer) {
+        vmaDestroyBuffer(vk_memory::GetAllocator(), buffer, allocation);
+        buffer = VK_NULL_HANDLE;
+    }
+}
+
 Buffer CreateBuffer(VkBufferUsageFlags usage, size_t size, bool mappable, VmaMemoryUsage memory_usage) {
     VkBufferCreateInfo buffer_create_info{
         .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,

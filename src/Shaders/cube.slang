@@ -35,7 +35,6 @@ struct MatrixReference {
 
 struct PushConstants {
     MatrixReference* scene_ref;
-    MatrixReference* model_ref;
 };
 
 [[vk::push_constant]]

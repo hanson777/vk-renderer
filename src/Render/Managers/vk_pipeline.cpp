@@ -17,7 +17,6 @@ namespace vk_pipeline {
 
     struct PushConstantBlock {
         uint64_t scene_ref;
-        uint64_t model_ref;
     };
 
 	bool Init() {

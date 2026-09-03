@@ -145,7 +145,7 @@ namespace vk_device {
 		VkPhysicalDeviceFeatures2 features{
 			.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2,
 			.pNext = &features11,
-            .features.multiDrawIndirect = VK_TRUE,
+            .features{.multiDrawIndirect = VK_TRUE},
 		};
 
 		std::vector<float> queue_priorities{ 1.0f };

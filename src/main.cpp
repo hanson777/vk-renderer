@@ -24,6 +24,8 @@ int main() {
         return -1;
     }
 
+    Renderer::PrepareUniformBuffers();
+
     while (!Window::ShouldClose()) {
         Window::BeginFrame();
         Orbit::Update();
@@ -31,6 +33,7 @@ int main() {
         Input::Update();
     }
 
+    Renderer::Shutdown();
     vk_context::Shutdown();
     Window::Shutdown();
 
