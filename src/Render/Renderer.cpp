@@ -69,9 +69,9 @@ namespace Renderer {
         vertex_staging.map();
         index_staging.map();
         memcpy(vertex_staging.mapped, vertices.data(), sizeof(vertices[0]) * vertices.size());
-        memcpy(vertex_staging.mapped, indices.data(), sizeof(indices[0]) * indices.size());
-        vertex_staging.unmap();
-        index_staging.unmap();
+        memcpy(index_staging.mapped, indices.data(), sizeof(indices[0]) * indices.size());
+		vertex_staging.unmap();
+		index_staging.unmap();
 
         CreateBuffer(
             VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, 

@@ -3,6 +3,7 @@
 #include "Render/Managers/vk_memory.h"
 #include "Render/Managers/vk_device.h"
 #include "Render/Managers/vk_sync.h"
+#include <iostream>
 
 VkResult Buffer::map() {
     return vmaMapMemory(vk_memory::GetAllocator(), allocation, &mapped);

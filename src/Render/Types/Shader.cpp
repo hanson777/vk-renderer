@@ -7,6 +7,7 @@
 #include <string>
 #include <iostream>
 #include <limits>
+#include <vector>
 
 namespace slang_context {
 
