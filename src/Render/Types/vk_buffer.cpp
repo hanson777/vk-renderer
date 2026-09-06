@@ -85,21 +85,21 @@ VkResult CopyBuffer(Buffer& src, Buffer& dst, VkDeviceSize size) {
     VkBufferCopy copy_region{ .size = size };
     vkCmdCopyBuffer(cmd_buffer, src.buffer, dst.buffer, 1, &copy_region);
 
-    VkCommandBufferSubmitInfo cmd_submit_info{
-        .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO,
-        .commandBuffer = cmd_buffer,
-    };
+    vkEndCommandBuffer(cmd_buffer);
 
     VkSubmitInfo submit_info{
         .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
         .commandBufferCount = 1,
         .pCommandBuffers = &cmd_buffer,
     };
-    vkEndCommandBuffer(cmd_buffer);
 
-    const VkQueue& queue = vk_device::GetQueue();
-    vkQueueSubmit(queue, 1, &submit_info, VK_NULL_HANDLE);
-    vkQueueWaitIdle(queue);
+    VkFenceCreateInfo fence_ci{ .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO };
+    VkFence fence;
+    vkCreateFence(device, &fence_ci, nullptr, &fence);
+
+    vkQueueSubmit(vk_device::GetQueue(), 1, &submit_info, fence);
+    vkWaitForFences(device, 1, &fence, VK_TRUE, UINT64_MAX);
+    vkDestroyFence(device, fence, nullptr);
 
     vkFreeCommandBuffers(device, cmd_pool, 1, &cmd_buffer);
     vkDestroyCommandPool(device, cmd_pool, nullptr);
