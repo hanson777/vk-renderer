@@ -3,6 +3,8 @@
 #include <string>
 
 namespace Renderer {
+	extern uint64_t g_next_signal_value;
+
 	void Render();
     void Shutdown();
     void PrepareUniformBuffers();

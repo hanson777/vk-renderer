@@ -11,6 +11,7 @@ namespace vk_sync {
 	std::vector<VkSemaphore> g_submit_semaphores;
 	std::vector<VkSemaphore> g_acquire_semaphores;
 	VkSemaphore g_timeline_semaphore = VK_NULL_HANDLE;
+    uint64_t g_timeline_value = MAX_FRAMES_IN_FLIGHT;
 	std::vector<VkCommandPool> g_command_pools;
 	std::vector<VkCommandBuffer> g_command_buffers;
 
@@ -20,7 +21,7 @@ namespace vk_sync {
 		VkSemaphoreTypeCreateInfo timeline_semaphore_type_create_info{
 			.sType = VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO,
 			.semaphoreType = VK_SEMAPHORE_TYPE_TIMELINE,
-			.initialValue = MAX_FRAMES_IN_FLIGHT,
+			.initialValue = g_timeline_value,
 		};
 		VkSemaphoreCreateInfo timeline_semaphore_create_info{
 			.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,

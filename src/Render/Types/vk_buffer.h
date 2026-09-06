@@ -13,4 +13,5 @@ struct Buffer {
     void destroy();
 };
 
-VkResult CreateBuffer(VkBufferUsageFlags usage, size_t size, bool mappable, VmaMemoryUsage memory_usage, Buffer* pBuffer);
+VkResult CreateBuffer(VkBufferUsageFlags usage, VkDeviceSize size, bool mappable, VmaMemoryUsage memory_usage, Buffer* pBuffer);
+VkResult CopyBuffer(Buffer& src, Buffer& dst, VkDeviceSize size);

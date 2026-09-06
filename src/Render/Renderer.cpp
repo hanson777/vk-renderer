@@ -20,7 +20,7 @@
 namespace Renderer {
 
 	uint32_t g_frame_count = 0;
-	uint64_t g_next_signal_value = MAX_FRAMES_IN_FLIGHT + 1;
+	uint64_t g_next_signal_value = vk_sync::g_timeline_value + 1;
 
     Scene scene;
     MeshData mesh_data;
@@ -41,9 +41,7 @@ namespace Renderer {
             buffer.unmap();
             buffer.destroy();
         }
-        mesh_data.vertex_buffer.unmap();
         mesh_data.vertex_buffer.destroy();
-        mesh_data.index_buffer.unmap();
         mesh_data.index_buffer.destroy();
     }
 
@@ -64,12 +62,39 @@ namespace Renderer {
             16, 17, 18, 16, 18, 19,
             20, 21, 22, 20, 22, 23
         };
-        CreateBuffer(VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, sizeof(vertices[0]) * vertices.size(), true, VMA_MEMORY_USAGE_AUTO, &mesh_data.vertex_buffer);
-        CreateBuffer(VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, sizeof(indices[0]) * indices.size(), true, VMA_MEMORY_USAGE_AUTO, &mesh_data.index_buffer);
-        mesh_data.vertex_buffer.map();
-        mesh_data.index_buffer.map();
-        memcpy(mesh_data.vertex_buffer.mapped, vertices.data(), sizeof(vertices[0]) * vertices.size());
-        memcpy(mesh_data.index_buffer.mapped, indices.data(), sizeof(indices[0]) * indices.size());
+        Buffer vertex_staging;
+        Buffer index_staging;
+        CreateBuffer(VK_BUFFER_USAGE_TRANSFER_SRC_BIT, sizeof(vertices[0]) * vertices.size(), true, VMA_MEMORY_USAGE_AUTO, &vertex_staging);
+        CreateBuffer(VK_BUFFER_USAGE_TRANSFER_SRC_BIT, sizeof(indices[0]) * indices.size(), true, VMA_MEMORY_USAGE_AUTO, &index_staging);
+        vertex_staging.map();
+        index_staging.map();
+        memcpy(vertex_staging.mapped, vertices.data(), sizeof(vertices[0]) * vertices.size());
+        memcpy(vertex_staging.mapped, indices.data(), sizeof(indices[0]) * indices.size());
+        vertex_staging.unmap();
+        index_staging.unmap();
+
+        CreateBuffer(
+            VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, 
+            sizeof(vertices[0]) * vertices.size(), 
+            false, 
+            VMA_MEMORY_USAGE_AUTO, 
+            &mesh_data.vertex_buffer
+        );
+
+        CreateBuffer(
+            VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, 
+            sizeof(indices[0]) * indices.size(), 
+            false, 
+            VMA_MEMORY_USAGE_AUTO, 
+            &mesh_data.index_buffer
+        );
+
+        CopyBuffer(vertex_staging, mesh_data.vertex_buffer, sizeof(vertices[0]) * vertices.size());
+        CopyBuffer(index_staging, mesh_data.index_buffer, sizeof(indices[0]) * indices.size());
+
+        vertex_staging.destroy();
+        index_staging.destroy();
+
         for (uint32_t i = 0; i < 2; i++) {
             CreateBuffer(VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, sizeof(glm::mat4), true, VMA_MEMORY_USAGE_AUTO, &scene.buffers[i]); 
             scene.buffers[i].map();
