@@ -39,10 +39,7 @@ namespace Renderer {
         vkDeviceWaitIdle(vk_device::GetDevice());
         for (auto& buffer : scene.buffers) {
             buffer.unmap();
-            buffer.destroy();
         }
-        mesh_data.vertex_buffer.destroy();
-        mesh_data.index_buffer.destroy();
     }
 
     void PrepareUniformBuffers() {
@@ -64,8 +61,8 @@ namespace Renderer {
         };
         Buffer vertex_staging;
         Buffer index_staging;
-        CreateBuffer(VK_BUFFER_USAGE_TRANSFER_SRC_BIT, sizeof(vertices[0]) * vertices.size(), true, VMA_MEMORY_USAGE_AUTO, &vertex_staging);
-        CreateBuffer(VK_BUFFER_USAGE_TRANSFER_SRC_BIT, sizeof(indices[0]) * indices.size(), true, VMA_MEMORY_USAGE_AUTO, &index_staging);
+        createBuffer(VK_BUFFER_USAGE_TRANSFER_SRC_BIT, sizeof(vertices[0]) * vertices.size(), true, VMA_MEMORY_USAGE_AUTO, &vertex_staging);
+        createBuffer(VK_BUFFER_USAGE_TRANSFER_SRC_BIT, sizeof(indices[0]) * indices.size(), true, VMA_MEMORY_USAGE_AUTO, &index_staging);
         vertex_staging.map();
         index_staging.map();
         memcpy(vertex_staging.mapped, vertices.data(), sizeof(vertices[0]) * vertices.size());
@@ -73,7 +70,7 @@ namespace Renderer {
 		vertex_staging.unmap();
 		index_staging.unmap();
 
-        CreateBuffer(
+        createBuffer(
             VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, 
             sizeof(vertices[0]) * vertices.size(), 
             false, 
@@ -81,7 +78,7 @@ namespace Renderer {
             &mesh_data.vertex_buffer
         );
 
-        CreateBuffer(
+        createBuffer(
             VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, 
             sizeof(indices[0]) * indices.size(), 
             false, 
@@ -89,14 +86,11 @@ namespace Renderer {
             &mesh_data.index_buffer
         );
 
-        CopyBuffer(vertex_staging, mesh_data.vertex_buffer, sizeof(vertices[0]) * vertices.size());
-        CopyBuffer(index_staging, mesh_data.index_buffer, sizeof(indices[0]) * indices.size());
-
-        vertex_staging.destroy();
-        index_staging.destroy();
+        copyBuffer(vertex_staging, mesh_data.vertex_buffer, sizeof(vertices[0]) * vertices.size());
+        copyBuffer(index_staging, mesh_data.index_buffer, sizeof(indices[0]) * indices.size());
 
         for (uint32_t i = 0; i < 2; i++) {
-            CreateBuffer(VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, sizeof(glm::mat4), true, VMA_MEMORY_USAGE_AUTO, &scene.buffers[i]); 
+            createBuffer(VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, sizeof(glm::mat4), true, VMA_MEMORY_USAGE_AUTO, &scene.buffers[i]); 
             scene.buffers[i].map();
         }
     }
@@ -151,7 +145,7 @@ namespace Renderer {
 			.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT
 		};
 		VkCommandBuffer& command_buffer = vk_sync::g_command_buffers[frame_index];
-		vkBeginCommandBuffer(command_buffer, &buffer_begin_info);
+		VK_CHECK(vkBeginCommandBuffer(command_buffer, &buffer_begin_info));
 
 		// transition image layout
 		std::vector<VkImageMemoryBarrier2> layout_barriers{
@@ -323,7 +317,7 @@ namespace Renderer {
 			.pSignalSemaphoreInfos = semaphore_signals.data(),
 		};
 		const VkQueue& queue = vk_device::GetQueue();
-		vkQueueSubmit2(queue, 1, &submit_info, VK_NULL_HANDLE);
+		VK_CHECK(vkQueueSubmit2(queue, 1, &submit_info, VK_NULL_HANDLE));
 
 		VkPresentInfoKHR present_info{
 			.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,

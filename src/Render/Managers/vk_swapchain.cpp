@@ -69,10 +69,7 @@ namespace vk_swapchain {
         const VkSurfaceKHR surface = vk_instance::GetSurface();
 
         VkSurfaceCapabilitiesKHR surface_caps{};
-        if (vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physical_device, surface, &surface_caps) != VK_SUCCESS) {
-            std::cerr << "[ERROR::SWAPCHAIN_MANAGER] failed to get surface capabilities\n";
-            return false;
-        }
+        VK_CHECK(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physical_device, surface, &surface_caps));
 
         const VkFormat image_format = VK_FORMAT_B8G8R8A8_SRGB;
         if (!supportsImageFormat(image_format)) {
@@ -97,10 +94,7 @@ namespace vk_swapchain {
             .clipped = VK_TRUE,
         };
 
-        if (vkCreateSwapchainKHR(device, &swapchain_create_info, nullptr, &g_swapchain) != VK_SUCCESS) {
-            std::cerr << "[ERROR::SWAPCHAIN_MANAGER] failed to create swapchain\n";
-            return false;
-        }
+        VK_CHECK(vkCreateSwapchainKHR(device, &swapchain_create_info, nullptr, &g_swapchain));
 
         if (!getSwapchainImages()) return false;
         if (!getDepthImages()) return false;
@@ -138,10 +132,7 @@ namespace vk_swapchain {
                 },
             };
 
-            if (vkCreateImageView(device, &image_view_create_info, nullptr, &g_swapchain_image_views[i]) != VK_SUCCESS) {
-                std::cerr << "[ERROR::SWAPCHAIN_MANAGER] failed to create swapchain image view\n";
-                return false;
-            }
+            VK_CHECK(vkCreateImageView(device, &image_view_create_info, nullptr, &g_swapchain_image_views[i]));
         }
 
         return true;
@@ -179,9 +170,7 @@ namespace vk_swapchain {
             .usage = VMA_MEMORY_USAGE_AUTO,
         };
 
-        if (vmaCreateImage(vk_memory::GetAllocator(), &depth_image_create_info, &alloc_create_info, &g_depth_image, &g_depth_image_allocation, nullptr) != VK_SUCCESS) {
-            std::cerr << "[ERROR::SWAPCHAIN] error creating and allocating depth image\n";
-        }
+        VK_CHECK(vmaCreateImage(vk_memory::GetAllocator(), &depth_image_create_info, &alloc_create_info, &g_depth_image, &g_depth_image_allocation, nullptr));
 
         VkImageViewCreateInfo depth_image_view_info{
             .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
@@ -194,10 +183,7 @@ namespace vk_swapchain {
             },
         };
 
-        if (vkCreateImageView(device, &depth_image_view_info, nullptr, &g_depth_image_view) != VK_SUCCESS) {
-            std::cerr << "[ERROR::SWAPCHAIN_MANAGER] failed to create depth image view\n";
-            return false;
-        }
+        VK_CHECK(vkCreateImageView(device, &depth_image_view_info, nullptr, &g_depth_image_view));
 
         return true;
     }

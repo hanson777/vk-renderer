@@ -1,6 +1,6 @@
 #include "vk_device.h"
 #include "Render/vk_common.h"
-#include "vk_instance.h"
+#include "Render/Managers/vk_instance.h"
 #include <cstdint>
 #include <algorithm>
 #include <limits>
@@ -202,11 +202,7 @@ namespace vk_device {
 			.pEnabledFeatures = nullptr,
 		};
 
-		VkResult result = vkCreateDevice(g_physical_device, &device_create_info, nullptr, &g_device);
-		if (result != VK_SUCCESS) {
-			std::cerr << "[ERROR::DEVICE_MANAGER] failed to create logical device: " << result << '\n';
-			return false;
-		}
+		VK_CHECK(vkCreateDevice(g_physical_device, &device_create_info, nullptr, &g_device));
         volkLoadDevice(g_device);
 
 		vkGetDeviceQueue(g_device, g_graphics_queue_index, 0, &g_graphics_queue);

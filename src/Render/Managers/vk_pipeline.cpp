@@ -1,8 +1,8 @@
 #include "vk_pipeline.h"
 #include "Render/vk_common.h"
-#include "vk_device.h"
+#include "Render/Managers/vk_device.h"
+#include "Render/Managers/vk_swapchain.h"
 #include "Render/Types/Shader.h"
-#include "vk_swapchain.h"
 #include <iostream>
 #include <vector>
 #include <cstdint>
@@ -35,10 +35,7 @@ namespace vk_pipeline {
 		};
 
 		const VkDevice& device = vk_device::GetDevice();
-		if (vkCreatePipelineLayout(device, &pipeline_layout_create_info, nullptr, &g_pipeline_layout) != VK_SUCCESS) {
-			std::cerr << "[ERROR::PIPELINE_MANAGER] failed to create pipeline layout\n";
-			return false;
-		}
+		VK_CHECK(vkCreatePipelineLayout(device, &pipeline_layout_create_info, nullptr, &g_pipeline_layout));
 		
 		for (int i = 0; i < g_shaders.size(); i++) {
 			std::cout << "shader stage: " << g_shaders[i].m_stage << '\n';
@@ -131,10 +128,7 @@ namespace vk_pipeline {
 			.renderPass = VK_NULL_HANDLE,
 		};
 
-		if (vkCreateGraphicsPipelines(device, nullptr, 1, &pipeline_create_info, nullptr, &g_pipeline) != VK_SUCCESS) {
-			std::cerr << "[ERROR::PIPELINE_MANAGER] failed to create graphics pipeline\n";
-			return false;
-		}
+		VK_CHECK(vkCreateGraphicsPipelines(device, nullptr, 1, &pipeline_create_info, nullptr, &g_pipeline));
 
 		return true;
 	}

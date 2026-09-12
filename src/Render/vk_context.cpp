@@ -1,21 +1,17 @@
 #include "vk_context.h"
-#include "vk_common.h"
-#include "Managers/vk_instance.h"
-#include "Managers/vk_device.h"
-#include "Managers/vk_memory.h"
-#include "Managers/vk_swapchain.h"
-#include "Managers/vk_pipeline.h"
-#include "Managers/vk_sync.h"
+#include "Render/vk_common.h"
+#include "Render/Managers/vk_instance.h"
+#include "Render/Managers/vk_device.h"
+#include "Render/Managers/vk_memory.h"
+#include "Render/Managers/vk_swapchain.h"
+#include "Render/Managers/vk_pipeline.h"
+#include "Render/Managers/vk_sync.h"
 #include <iostream>
 
 namespace vk_context {
 
 	bool Init() {
-        VkResult result = volkInitialize();
-		if (result != VK_SUCCESS) {
-            std::cerr << "[ERROR::VKCONTEXT] failed to initialize volk: " << result << '\n';
-			return false;
-		}
+        VK_CHECK(volkInitialize());
         
         if (!vk_instance::Init()) { 
             std::cerr << "[ERROR::VK_CONTEXT] vk_instance::Init() failed\n";

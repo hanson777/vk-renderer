@@ -3,7 +3,6 @@
 #include "vk_device.h"
 #include "vk_instance.h"
 #include <cstdint>
-#include <iostream>
 
 namespace vk_memory {
 
@@ -24,13 +23,9 @@ namespace vk_memory {
             .vulkanApiVersion = VK_VERSION,
         };
 
-        vmaImportVulkanFunctionsFromVolk(&allocator_create_info, &vulkan_functions);
+        VK_CHECK(vmaImportVulkanFunctionsFromVolk(&allocator_create_info, &vulkan_functions));
 
-        VkResult result = vmaCreateAllocator(&allocator_create_info, &g_allocator);
-        if (result != VK_SUCCESS) {
-            std::cerr << "[ERROR::MEMORY_MANAGER] failed to create VMA allocator: " << result << '\n';
-            return false;
-        }
+        VK_CHECK(vmaCreateAllocator(&allocator_create_info, &g_allocator));
         return true;
     }
 

@@ -91,23 +91,13 @@ namespace vk_instance {
             instance_create_info.flags = VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
         #endif
 
-        VkResult result = vkCreateInstance(&instance_create_info, nullptr, &g_instance);
-        if (result != VK_SUCCESS) {
-            std::cerr << "[ERROR::INSTANCE_MANAGER] failed to create instance: " << result << '\n';
-            return false;
-        }
+        VK_CHECK(vkCreateInstance(&instance_create_info, nullptr, &g_instance));
 
 		volkLoadInstance(g_instance);
 
-        if (vkCreateDebugUtilsMessengerEXT(g_instance, &debug_create_info, nullptr, &g_debug_messenger) != VK_SUCCESS) {
-            std::cerr << "[ERROR::INSTANCE_MANAGER] failed to set up debug messenger\n";
-            return false;
-        }
+        VK_CHECK(vkCreateDebugUtilsMessengerEXT(g_instance, &debug_create_info, nullptr, &g_debug_messenger));
         
-        if (glfwCreateWindowSurface(g_instance, Window::GetHandle(), nullptr, &g_surface) != VK_SUCCESS) {
-            std::cerr << "[ERROR::INSTANCE_MANAGER] failed to create surface\n";
-            return false;
-        }
+        VK_CHECK(glfwCreateWindowSurface(g_instance, Window::GetHandle(), nullptr, &g_surface));
 
         return true;
     }

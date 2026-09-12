@@ -2,28 +2,48 @@
 #include "Render/vk_common.h"
 #include "Render/Managers/vk_memory.h"
 #include "Render/Managers/vk_device.h"
-#include "Render/Managers/vk_sync.h"
-#include <iostream>
 
-VkResult Buffer::map() {
-    return vmaMapMemory(vk_memory::GetAllocator(), allocation, &mapped);
+Buffer::Buffer(Buffer&& other) noexcept : buffer(other.buffer), allocation(other.allocation), address(other.address) {
+    other.buffer = VK_NULL_HANDLE;
+    other.allocation = VK_NULL_HANDLE;
+    other.address = 0;
+}
+
+Buffer& Buffer::operator=(Buffer&& other) noexcept {
+    if (this != &other) {
+        Buffer::destroy();
+        buffer = other.buffer;
+        allocation = other.allocation;
+        address = other.address;
+        other.buffer = VK_NULL_HANDLE;
+        other.allocation = VK_NULL_HANDLE;
+        other.address = 0;
+    }
+    return *this;
+}
+
+Buffer::~Buffer() { destroy(); }
+
+void Buffer::map() {
+    VK_CHECK(vmaMapMemory(vk_memory::GetAllocator(), allocation, &mapped));
 }
 
 void Buffer::unmap() {
     if (mapped != nullptr) {
-        return vmaUnmapMemory(vk_memory::GetAllocator(), allocation);
+        vmaUnmapMemory(vk_memory::GetAllocator(), allocation);
         mapped = nullptr;
     }
 }
 
 void Buffer::destroy() {
-    if (buffer) {
+    if (buffer != VK_NULL_HANDLE) {
         vmaDestroyBuffer(vk_memory::GetAllocator(), buffer, allocation);
         buffer = VK_NULL_HANDLE;
+        allocation = VK_NULL_HANDLE;
     }
 }
 
-VkResult CreateBuffer(VkBufferUsageFlags usage, VkDeviceSize size, bool mappable, VmaMemoryUsage memory_usage, Buffer* pBuffer) {
+void createBuffer(VkBufferUsageFlags usage, VkDeviceSize size, bool mappable, VmaMemoryUsage memory_usage, Buffer* pBuffer) {
     VkBufferCreateInfo buffer_create_info{
         .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
         .size = size,
@@ -36,9 +56,7 @@ VkResult CreateBuffer(VkBufferUsageFlags usage, VkDeviceSize size, bool mappable
         .usage = memory_usage,
     };
 
-    if (VkResult result = vmaCreateBuffer(vk_memory::GetAllocator(), &buffer_create_info, &alloc_create_info, &pBuffer->buffer, &pBuffer->allocation, nullptr); result != VK_SUCCESS) {
-        return result;
-    }
+    VK_CHECK(vmaCreateBuffer(vk_memory::GetAllocator(), &buffer_create_info, &alloc_create_info, &pBuffer->buffer, &pBuffer->allocation, nullptr));
 
     if (usage & VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT) {
         VkBufferDeviceAddressInfo address_info{
@@ -47,10 +65,9 @@ VkResult CreateBuffer(VkBufferUsageFlags usage, VkDeviceSize size, bool mappable
         };
         pBuffer->address = vkGetBufferDeviceAddress(vk_device::GetDevice(), &address_info);
     }
-    return VK_SUCCESS;
 }
 
-VkResult CopyBuffer(Buffer& src, Buffer& dst, VkDeviceSize size) {
+void copyBuffer(Buffer& src, Buffer& dst, VkDeviceSize size) {
     VkCommandPoolCreateInfo cmd_pool_ci{
         .sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
         .flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT,
@@ -59,9 +76,7 @@ VkResult CopyBuffer(Buffer& src, Buffer& dst, VkDeviceSize size) {
     
     const VkDevice& device = vk_device::GetDevice();
     VkCommandPool cmd_pool;
-    if (VkResult result = vkCreateCommandPool(device, &cmd_pool_ci, nullptr, &cmd_pool); result != VK_SUCCESS) {
-        return result;
-    };
+    VK_CHECK(vkCreateCommandPool(device, &cmd_pool_ci, nullptr, &cmd_pool));
 
     VkCommandBufferAllocateInfo cmd_info{
         .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
@@ -69,23 +84,19 @@ VkResult CopyBuffer(Buffer& src, Buffer& dst, VkDeviceSize size) {
         .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
         .commandBufferCount = 1,
     };
-
     VkCommandBuffer cmd_buffer;
-    if (VkResult result = vkAllocateCommandBuffers(device, &cmd_info, &cmd_buffer); result != VK_SUCCESS) {
-        return result;
-    };
+    VK_CHECK(vkAllocateCommandBuffers(device, &cmd_info, &cmd_buffer));
 
     VkCommandBufferBeginInfo buffer_info{
         .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
         .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
     };
-
-    vkBeginCommandBuffer(cmd_buffer, &buffer_info);    
+    VK_CHECK(vkBeginCommandBuffer(cmd_buffer, &buffer_info));
 
     VkBufferCopy copy_region{ .size = size };
     vkCmdCopyBuffer(cmd_buffer, src.buffer, dst.buffer, 1, &copy_region);
 
-    vkEndCommandBuffer(cmd_buffer);
+    VK_CHECK(vkEndCommandBuffer(cmd_buffer));
 
     VkSubmitInfo submit_info{
         .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
@@ -95,14 +106,12 @@ VkResult CopyBuffer(Buffer& src, Buffer& dst, VkDeviceSize size) {
 
     VkFenceCreateInfo fence_ci{ .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO };
     VkFence fence;
-    vkCreateFence(device, &fence_ci, nullptr, &fence);
+    VK_CHECK(vkCreateFence(device, &fence_ci, nullptr, &fence));
 
-    vkQueueSubmit(vk_device::GetQueue(), 1, &submit_info, fence);
+    VK_CHECK(vkQueueSubmit(vk_device::GetQueue(), 1, &submit_info, fence));
     vkWaitForFences(device, 1, &fence, VK_TRUE, UINT64_MAX);
     vkDestroyFence(device, fence, nullptr);
 
     vkFreeCommandBuffers(device, cmd_pool, 1, &cmd_buffer);
     vkDestroyCommandPool(device, cmd_pool, nullptr);
-
-    return VK_SUCCESS;
 }

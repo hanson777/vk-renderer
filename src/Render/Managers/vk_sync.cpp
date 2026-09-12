@@ -3,7 +3,6 @@
 #include "vk_swapchain.h"
 #include "vk_device.h"
 #include <vector>
-#include <iostream>
 #include <cstdint>
 
 namespace vk_sync {
@@ -29,27 +28,18 @@ namespace vk_sync {
 		};
 		VkSemaphoreCreateInfo binary_semaphore_create_info{ .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO };
 
-		if (vkCreateSemaphore(device, &timeline_semaphore_create_info, nullptr, &g_timeline_semaphore) != VK_SUCCESS) {
-			std::cerr << "[ERROR::SYNC_MANAGER] failed to create timeline semaphore\n";
-			return false;
-		};
+		VK_CHECK(vkCreateSemaphore(device, &timeline_semaphore_create_info, nullptr, &g_timeline_semaphore));
 
 		// semaphores for image acquisition
 		g_acquire_semaphores.resize(MAX_FRAMES_IN_FLIGHT);
 		for (VkSemaphore& semaphore : g_acquire_semaphores) {
-			if (vkCreateSemaphore(device, &binary_semaphore_create_info, nullptr, &semaphore) != VK_SUCCESS) {
-				std::cerr << "[ERROR::SYNC_MANAGER] failed to create image acquired semaphore\n";
-				return false;
-			};
+            VK_CHECK(vkCreateSemaphore(device, &binary_semaphore_create_info, nullptr, &semaphore));
 		}
 
 		// semaphores for swapchain images
 		g_submit_semaphores.resize(vk_swapchain::g_swapchain_images.size());
 		for (VkSemaphore& semaphore : g_submit_semaphores) {
-			if (vkCreateSemaphore(device, &binary_semaphore_create_info, nullptr, &semaphore) != VK_SUCCESS) {
-				std::cerr << "[ERROR::SYNC_MANAGER] failed to create render complete semaphore\n";
-				return false;
-			}
+            VK_CHECK(vkCreateSemaphore(device, &binary_semaphore_create_info, nullptr, &semaphore));
 		}
 
 		g_command_pools.resize(MAX_FRAMES_IN_FLIGHT);
@@ -59,10 +49,7 @@ namespace vk_sync {
 			.queueFamilyIndex = vk_device::GetQueueIndex(),
 		};
 		for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-			if (vkCreateCommandPool(device, &cmd_pool_create_info, nullptr, &g_command_pools[i]) != VK_SUCCESS) {
-				std::cerr << "[ERROR::SYNC_MANAGER] failed to create command pool\n";
-				return false;
-			}
+			VK_CHECK(vkCreateCommandPool(device, &cmd_pool_create_info, nullptr, &g_command_pools[i]));
 
 			VkCommandBufferAllocateInfo cmd_allocate_info{
 				.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
@@ -70,10 +57,7 @@ namespace vk_sync {
 				.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
 				.commandBufferCount = 1,
 			};
-			if (vkAllocateCommandBuffers(device, &cmd_allocate_info, &g_command_buffers[i]) != VK_SUCCESS) {
-				std::cerr << "[ERROR::SYNC_MANAGER] failed to create command buffer\n";
-				return false;
-			}
+			VK_CHECK(vkAllocateCommandBuffers(device, &cmd_allocate_info, &g_command_buffers[i]));
 		}
 
 		return true;
