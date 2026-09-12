@@ -2,7 +2,7 @@
 #include "Render/vk_common.h"
 #include "Render/Types/vk_buffer.h"
 #include "Render/Types/Node.h"
-#include "Types/Vertex.h"
+#include "Render/Types/Vertex.h"
 #include <tiny_gltf_v3.h>
 #include <glm/glm.hpp>
 #include <vector>
@@ -35,11 +35,11 @@ struct Model {
     std::vector<Vertex> m_vertices;
     std::vector<uint32_t> m_indices;
     uint32_t m_vert_buffer_id = 0;
-    uint32_t m_index_buffer_id = 0;
-    uint32_t m_vert_offset;
-    uint32_t m_index_offset;
+    uint32_t m_index_buffer_id = 1;
+
+    void loadGltf(const std::string& filename);
 
     private:
-    void loadGltf(std::string& filename);
+    void loadNode(const tg3_model& model);
     void loadMeshes(const tg3_model& model);
 };

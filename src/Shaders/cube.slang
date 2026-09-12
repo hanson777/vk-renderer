@@ -1,6 +1,9 @@
 struct Vertex
 {
     float3 position;
+    float3 normal;
+    float2 uv;
+    float3 color;
 };
 
 struct VertexOutput

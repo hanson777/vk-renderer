@@ -1,6 +1,6 @@
 #pragma once
 #include "AssetManager.h"
-#include "Types/Vertex.h"
+#include "Render/Types/Vertex.h"
 #include "tiny_gltf_v3.h"
 #include <vector>
 #include <iostream>

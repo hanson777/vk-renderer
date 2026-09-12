@@ -1,5 +1,5 @@
 #pragma once
-#include "Types/Vertex.h"
+#include "Render/Types/Vertex.h"
 #include <vector>
 
 namespace AssetManager {

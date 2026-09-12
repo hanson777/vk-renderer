@@ -39,7 +39,6 @@ void Buffer::destroy() {
     if (buffer != VK_NULL_HANDLE) {
         vmaDestroyBuffer(vk_memory::GetAllocator(), buffer, allocation);
         buffer = VK_NULL_HANDLE;
-        allocation = VK_NULL_HANDLE;
     }
 }
 

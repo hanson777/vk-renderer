@@ -9,7 +9,7 @@
 #include "Core/Window.h"
 #include "Render/Types/vk_buffer.h"
 #include "Render/Types/Scene.h"
-#include "Render/Types/MeshData.h"
+#include "Render/Types/gltf_model.h"
 #include <cstdint>
 #include <vector>
 #include <array>
@@ -23,12 +23,7 @@ namespace Renderer {
 	uint64_t g_next_signal_value = vk_sync::g_timeline_value + 1;
 
     Scene scene;
-    MeshData mesh_data;
-
-    struct Cube { 
-        glm::mat4 model_matrix;
-        std::array<Buffer, 2> buffers;
-    } cube;
+    Model model;
 
     struct PushConstantBlock {
         uint64_t scene_ref;
@@ -39,26 +34,15 @@ namespace Renderer {
         vkDeviceWaitIdle(vk_device::GetDevice());
         for (auto& buffer : scene.buffers) {
             buffer.unmap();
+            buffer = {};
         }
+        model.m_buffers.clear();
     }
 
     void PrepareUniformBuffers() {
-        const std::vector<glm::vec3> vertices = {
-            {-0.5f, -0.5f, -0.5f}, {-0.5f, -0.5f,  0.5f}, {-0.5f,  0.5f,  0.5f}, {-0.5f,  0.5f, -0.5f},
-            { 0.5f, -0.5f,  0.5f}, { 0.5f, -0.5f, -0.5f}, { 0.5f,  0.5f, -0.5f}, { 0.5f,  0.5f,  0.5f},
-            {-0.5f, -0.5f, -0.5f}, { 0.5f, -0.5f, -0.5f}, { 0.5f, -0.5f,  0.5f}, {-0.5f, -0.5f,  0.5f},
-            {-0.5f,  0.5f,  0.5f}, { 0.5f,  0.5f,  0.5f}, { 0.5f,  0.5f, -0.5f}, {-0.5f,  0.5f, -0.5f},
-            { 0.5f, -0.5f, -0.5f}, {-0.5f, -0.5f, -0.5f}, {-0.5f,  0.5f, -0.5f}, { 0.5f,  0.5f, -0.5f},
-            {-0.5f, -0.5f,  0.5f}, { 0.5f, -0.5f,  0.5f}, { 0.5f,  0.5f,  0.5f}, {-0.5f,  0.5f,  0.5f}
-        };
-        const std::vector<uint32_t> indices = {
-            0,  1,  2,  0,  2,  3,
-            4,  5,  6,  4,  6,  7,
-            8,  9,  10, 8,  10, 11,
-            12, 13, 14, 12, 14, 15,
-            16, 17, 18, 16, 18, 19,
-            20, 21, 22, 20, 22, 23
-        };
+        model.loadGltf("/Users/hanson/graphics/vk-renderer/res/cube/scene.gltf");
+        const std::vector<Vertex>& vertices = model.m_vertices;
+        const std::vector<uint32_t>& indices = model.m_indices;
         Buffer vertex_staging;
         Buffer index_staging;
         createBuffer(VK_BUFFER_USAGE_TRANSFER_SRC_BIT, sizeof(vertices[0]) * vertices.size(), true, VMA_MEMORY_USAGE_AUTO, &vertex_staging);
@@ -75,7 +59,7 @@ namespace Renderer {
             sizeof(vertices[0]) * vertices.size(), 
             false, 
             VMA_MEMORY_USAGE_AUTO, 
-            &mesh_data.vertex_buffer
+            &model.m_buffers[model.m_vert_buffer_id]
         );
 
         createBuffer(
@@ -83,11 +67,11 @@ namespace Renderer {
             sizeof(indices[0]) * indices.size(), 
             false, 
             VMA_MEMORY_USAGE_AUTO, 
-            &mesh_data.index_buffer
+            &model.m_buffers[model.m_index_buffer_id]
         );
 
-        copyBuffer(vertex_staging, mesh_data.vertex_buffer, sizeof(vertices[0]) * vertices.size());
-        copyBuffer(index_staging, mesh_data.index_buffer, sizeof(indices[0]) * indices.size());
+        copyBuffer(vertex_staging, model.m_buffers[model.m_vert_buffer_id], sizeof(vertices[0]) * vertices.size());
+        copyBuffer(index_staging, model.m_buffers[model.m_index_buffer_id], sizeof(indices[0]) * indices.size());
 
         for (uint32_t i = 0; i < 2; i++) {
             createBuffer(VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, sizeof(glm::mat4), true, VMA_MEMORY_USAGE_AUTO, &scene.buffers[i]); 
@@ -240,8 +224,8 @@ namespace Renderer {
 
 			vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vk_pipeline::g_pipeline);
 
-            Buffer& vertex_buffer = mesh_data.vertex_buffer;
-            Buffer& index_buffer = mesh_data.index_buffer;
+            Buffer& vertex_buffer = model.m_buffers[model.m_vert_buffer_id]; 
+            Buffer& index_buffer = model.m_buffers[model.m_index_buffer_id]; 
 
             PushConstantBlock refs{};
             refs.scene_ref = scene.buffers[frame_index].address;

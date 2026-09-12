@@ -84,12 +84,13 @@ add_executable(${PROJECT_NAME}
     src/Render/Managers/vk_sync.cpp
     src/Render/Types/Shader.cpp
     src/Render/Types/vk_buffer.cpp
+    src/Render/Types/gltf_model.cpp
     src/Render/Renderer.cpp
 )
 
 add_custom_target(run
     COMMAND vk-renderer
-    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/src
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
     DEPENDS vk-renderer
 )
 

@@ -38,7 +38,6 @@ namespace vk_pipeline {
 		VK_CHECK(vkCreatePipelineLayout(device, &pipeline_layout_create_info, nullptr, &g_pipeline_layout));
 		
 		for (int i = 0; i < g_shaders.size(); i++) {
-			std::cout << "shader stage: " << g_shaders[i].m_stage << '\n';
 			VkPipelineShaderStageCreateInfo ss_create_info{
 				.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
 				.pNext = &g_shaders[i].m_module_create_info,
