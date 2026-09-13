@@ -9,7 +9,9 @@
 #include "Core/Window.h"
 #include "Render/Types/vk_buffer.h"
 #include "Render/Types/Scene.h"
-#include "Render/Types/gltf_model.h"
+#include "Render/Types/Node.h"
+#include "Render/Types/scene_resources.h"
+#include "Render/Types/gltf_loader.h"
 #include <cstdint>
 #include <vector>
 #include <array>
@@ -23,7 +25,8 @@ namespace Renderer {
 	uint64_t g_next_signal_value = vk_sync::g_timeline_value + 1;
 
     Scene scene;
-    Model model;
+    SceneResources scene_resources;
+    GltfLoader gltf_loader;
 
     struct PushConstantBlock {
         uint64_t scene_ref;
@@ -36,45 +39,16 @@ namespace Renderer {
             buffer.unmap();
             buffer = {};
         }
-        model.m_buffers.clear();
     }
 
     void PrepareUniformBuffers() {
-        model.loadGltf("/Users/hanson/graphics/vk-renderer/res/cube/scene.gltf");
-        const std::vector<Vertex>& vertices = model.m_vertices;
-        const std::vector<uint32_t>& indices = model.m_indices;
-        Buffer vertex_staging;
-        Buffer index_staging;
-        createBuffer(VK_BUFFER_USAGE_TRANSFER_SRC_BIT, sizeof(vertices[0]) * vertices.size(), true, VMA_MEMORY_USAGE_AUTO, &vertex_staging);
-        createBuffer(VK_BUFFER_USAGE_TRANSFER_SRC_BIT, sizeof(indices[0]) * indices.size(), true, VMA_MEMORY_USAGE_AUTO, &index_staging);
-        vertex_staging.map();
-        index_staging.map();
-        memcpy(vertex_staging.mapped, vertices.data(), sizeof(vertices[0]) * vertices.size());
-        memcpy(index_staging.mapped, indices.data(), sizeof(indices[0]) * indices.size());
-		vertex_staging.unmap();
-		index_staging.unmap();
-
-        createBuffer(
-            VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, 
-            sizeof(vertices[0]) * vertices.size(), 
-            false, 
-            VMA_MEMORY_USAGE_AUTO, 
-            &model.m_buffers[model.m_vert_buffer_id]
-        );
-
-        createBuffer(
-            VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, 
-            sizeof(indices[0]) * indices.size(), 
-            false, 
-            VMA_MEMORY_USAGE_AUTO, 
-            &model.m_buffers[model.m_index_buffer_id]
-        );
-
-        copyBuffer(vertex_staging, model.m_buffers[model.m_vert_buffer_id], sizeof(vertices[0]) * vertices.size());
-        copyBuffer(index_staging, model.m_buffers[model.m_index_buffer_id], sizeof(indices[0]) * indices.size());
+        gltf_loader.loadGltf("/Users/hanson/graphics/vk-renderer/res/cube/scene.gltf", scene_resources);
+        Node* root = scene_resources.getTree().getNode(scene_resources.getTree().m_root_node_id);
+        root->m_scale = glm::vec3(0.5, 0.5, 0.5);
+        root->m_translation = glm::vec3(0, -3, 0);
 
         for (uint32_t i = 0; i < 2; i++) {
-            createBuffer(VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, sizeof(glm::mat4), true, VMA_MEMORY_USAGE_AUTO, &scene.buffers[i]); 
+            scene.buffers[i] = createBuffer(VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, sizeof(glm::mat4), true, VMA_MEMORY_USAGE_AUTO);
             scene.buffers[i].map();
         }
     }
@@ -224,19 +198,19 @@ namespace Renderer {
 
 			vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vk_pipeline::g_pipeline);
 
-            Buffer& vertex_buffer = model.m_buffers[model.m_vert_buffer_id]; 
-            Buffer& index_buffer = model.m_buffers[model.m_index_buffer_id]; 
+            Buffer* vertex_buffer = scene_resources.getBuffer(scene_resources.getVertexBufferId()); 
+            Buffer* index_buffer = scene_resources.getBuffer(scene_resources.getIndexBufferId()); 
 
             PushConstantBlock refs{};
             refs.scene_ref = scene.buffers[frame_index].address;
-            refs.vertex_ref = vertex_buffer.address;
+            refs.vertex_ref = vertex_buffer->address;
 
             vkCmdPushConstants(command_buffer, vk_pipeline::g_pipeline_layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstantBlock), &refs);
 
             UpdateUniformBuffers(frame_index);
 
             // replace this with a index array length
-            vkCmdBindIndexBuffer(command_buffer, index_buffer.buffer, 0, VK_INDEX_TYPE_UINT32);
+            vkCmdBindIndexBuffer(command_buffer, index_buffer->buffer, 0, VK_INDEX_TYPE_UINT32);
             vkCmdDrawIndexed(command_buffer, 36, 1, 0, 0, 0);
 		}
 		vkCmdEndRendering(command_buffer);

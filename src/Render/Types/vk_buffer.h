@@ -25,5 +25,5 @@ private:
     void destroy();
 };
 
-void createBuffer(VkBufferUsageFlags usage, VkDeviceSize size, bool mappable, VmaMemoryUsage memory_usage, Buffer* pBuffer);
+Buffer createBuffer(VkBufferUsageFlags usage, VkDeviceSize size, bool mappable, VmaMemoryUsage memory_usage);
 void copyBuffer(Buffer& src, Buffer& dst, VkDeviceSize size);

@@ -42,7 +42,7 @@ void Buffer::destroy() {
     }
 }
 
-void createBuffer(VkBufferUsageFlags usage, VkDeviceSize size, bool mappable, VmaMemoryUsage memory_usage, Buffer* pBuffer) {
+Buffer createBuffer(VkBufferUsageFlags usage, VkDeviceSize size, bool mappable, VmaMemoryUsage memory_usage) {
     VkBufferCreateInfo buffer_create_info{
         .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
         .size = size,
@@ -55,15 +55,17 @@ void createBuffer(VkBufferUsageFlags usage, VkDeviceSize size, bool mappable, Vm
         .usage = memory_usage,
     };
 
-    VK_CHECK(vmaCreateBuffer(vk_memory::GetAllocator(), &buffer_create_info, &alloc_create_info, &pBuffer->buffer, &pBuffer->allocation, nullptr));
+    Buffer buffer;
+    VK_CHECK(vmaCreateBuffer(vk_memory::GetAllocator(), &buffer_create_info, &alloc_create_info, &buffer.buffer, &buffer.allocation, nullptr));
 
     if (usage & VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT) {
         VkBufferDeviceAddressInfo address_info{
             .sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO,
-            .buffer = pBuffer->buffer,
+            .buffer = buffer.buffer,
         };
-        pBuffer->address = vkGetBufferDeviceAddress(vk_device::GetDevice(), &address_info);
+        buffer.address = vkGetBufferDeviceAddress(vk_device::GetDevice(), &address_info);
     }
+    return buffer;
 }
 
 void copyBuffer(Buffer& src, Buffer& dst, VkDeviceSize size) {

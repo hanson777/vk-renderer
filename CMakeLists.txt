@@ -84,7 +84,10 @@ add_executable(${PROJECT_NAME}
     src/Render/Managers/vk_sync.cpp
     src/Render/Types/Shader.cpp
     src/Render/Types/vk_buffer.cpp
-    src/Render/Types/gltf_model.cpp
+    src/Render/Types/gltf_loader.cpp
+    src/Render/Types/scene_resources.cpp
+    src/Render/Types/Tree.cpp
+    src/Render/Types/Node.cpp
     src/Render/Renderer.cpp
 )
 
