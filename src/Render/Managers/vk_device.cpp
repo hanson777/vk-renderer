@@ -3,14 +3,13 @@
 #include "Render/Managers/vk_instance.h"
 #include <cstdint>
 #include <algorithm>
-#include <limits>
 #include <vector>
 #include <iostream>
 
 namespace vk_device {
 
 	VkPhysicalDevice g_physical_device = VK_NULL_HANDLE;
-	uint32_t g_graphics_queue_index = std::numeric_limits<uint32_t>::max();
+	uint32_t g_graphics_queue_index = UINT32_MAX; 
 	VkQueue g_graphics_queue = VK_NULL_HANDLE;
 	VkDevice g_device = VK_NULL_HANDLE;
 

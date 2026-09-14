@@ -26,7 +26,9 @@ struct SceneResources {
     std::vector<uint32_t>& getIndices() { return m_indices; }
     std::vector<Mesh>& getMeshes() { return m_meshes; }
 
+    uint32_t addBuffer(Buffer buffer);
     Buffer* getBuffer(uint32_t id);
+    void destroyBuffers() { m_buffers.clear(); }
 
     uint32_t getVertexBufferId() { return m_vertex_buffer_id; }
     uint32_t getIndexBufferId() { return m_index_buffer_id; }
@@ -35,5 +37,4 @@ struct SceneResources {
     void setVertexBufferId(uint32_t id) { m_vertex_buffer_id = id; }
     void setIndexBufferId(uint32_t id) { m_index_buffer_id = id; }
 
-    uint32_t addBuffer(Buffer buffer);
 };

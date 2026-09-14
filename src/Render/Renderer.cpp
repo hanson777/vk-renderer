@@ -35,10 +35,11 @@ namespace Renderer {
 
     void Shutdown() {
         vkDeviceWaitIdle(vk_device::GetDevice());
-        for (auto& buffer : scene.buffers) {
+        for (Buffer& buffer : scene.buffers) {
             buffer.unmap();
             buffer = {};
         }
+        scene_resources.destroyBuffers();
     }
 
     void PrepareUniformBuffers() {

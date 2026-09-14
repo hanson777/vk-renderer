@@ -68,17 +68,19 @@ Buffer createBuffer(VkBufferUsageFlags usage, VkDeviceSize size, bool mappable, 
     return buffer;
 }
 
-void copyBuffer(Buffer& src, Buffer& dst, VkDeviceSize size) {
+VkCommandPool createCommandPool(uint32_t queue_family_index, VkCommandPoolCreateFlags flags) {
     VkCommandPoolCreateInfo cmd_pool_ci{
         .sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
-        .flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT,
-        .queueFamilyIndex = vk_device::GetQueueIndex(),
+        .flags = flags,
+        .queueFamilyIndex = queue_family_index,
     };
     
-    const VkDevice& device = vk_device::GetDevice();
     VkCommandPool cmd_pool;
-    VK_CHECK(vkCreateCommandPool(device, &cmd_pool_ci, nullptr, &cmd_pool));
+    VK_CHECK(vkCreateCommandPool(vk_device::GetDevice(), &cmd_pool_ci, nullptr, &cmd_pool));
+    return cmd_pool;
+}
 
+VkCommandBuffer createCommandBuffer(VkCommandPool cmd_pool, VkCommandBufferLevel level, bool begin) {
     VkCommandBufferAllocateInfo cmd_info{
         .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
         .commandPool = cmd_pool, 
@@ -86,19 +88,21 @@ void copyBuffer(Buffer& src, Buffer& dst, VkDeviceSize size) {
         .commandBufferCount = 1,
     };
     VkCommandBuffer cmd_buffer;
-    VK_CHECK(vkAllocateCommandBuffers(device, &cmd_info, &cmd_buffer));
+    VK_CHECK(vkAllocateCommandBuffers(vk_device::GetDevice(), &cmd_info, &cmd_buffer));
 
-    VkCommandBufferBeginInfo buffer_info{
-        .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-        .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
-    };
-    VK_CHECK(vkBeginCommandBuffer(cmd_buffer, &buffer_info));
+    if (begin) {
+        VkCommandBufferBeginInfo begin_info{
+            .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+            .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
+        };
+        VK_CHECK(vkBeginCommandBuffer(cmd_buffer, &begin_info));
+    }
 
-    VkBufferCopy copy_region{ .size = size };
-    vkCmdCopyBuffer(cmd_buffer, src.buffer, dst.buffer, 1, &copy_region);
+    return cmd_buffer;
+}
 
+void flushCommandBuffer(VkCommandBuffer cmd_buffer, VkQueue queue, VkCommandPool cmd_pool, bool free) {
     VK_CHECK(vkEndCommandBuffer(cmd_buffer));
-
     VkSubmitInfo submit_info{
         .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
         .commandBufferCount = 1,
@@ -107,12 +111,26 @@ void copyBuffer(Buffer& src, Buffer& dst, VkDeviceSize size) {
 
     VkFenceCreateInfo fence_ci{ .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO };
     VkFence fence;
+    const VkDevice& device = vk_device::GetDevice();
     VK_CHECK(vkCreateFence(device, &fence_ci, nullptr, &fence));
 
-    VK_CHECK(vkQueueSubmit(vk_device::GetQueue(), 1, &submit_info, fence));
+    VK_CHECK(vkQueueSubmit(queue, 1, &submit_info, fence));
     vkWaitForFences(device, 1, &fence, VK_TRUE, UINT64_MAX);
     vkDestroyFence(device, fence, nullptr);
 
-    vkFreeCommandBuffers(device, cmd_pool, 1, &cmd_buffer);
-    vkDestroyCommandPool(device, cmd_pool, nullptr);
+    if (free) {
+        vkFreeCommandBuffers(device, cmd_pool, 1, &cmd_buffer);
+    }
+}
+
+void copyBuffer(Buffer& src, Buffer& dst, VkDeviceSize size) {
+    VkCommandPool cmd_pool = createCommandPool(vk_device::GetQueueIndex(), VK_COMMAND_POOL_CREATE_TRANSIENT_BIT);
+    VkCommandBuffer cmd_buffer = createCommandBuffer(cmd_pool, VK_COMMAND_BUFFER_LEVEL_PRIMARY, true);
+
+    VkBufferCopy copy_region{ .size = size };
+    vkCmdCopyBuffer(cmd_buffer, src.buffer, dst.buffer, 1, &copy_region);
+
+    flushCommandBuffer(cmd_buffer, vk_device::GetQueue(), cmd_pool, true);
+
+    vkDestroyCommandPool(vk_device::GetDevice(), cmd_pool, nullptr);
 }

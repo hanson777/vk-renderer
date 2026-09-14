@@ -207,7 +207,7 @@ namespace vk_swapchain {
     }
 
     static VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities) {
-        if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
+        if (capabilities.currentExtent.width != UINT32_MAX){
             return capabilities.currentExtent;
         }
         int width, height;
@@ -221,9 +221,9 @@ namespace vk_swapchain {
 
     VkSwapchainKHR GetSwapchain() { return g_swapchain; }
 
-    VkFormat* GetSwapchainImageFormat() { return &g_swapchain_image_format; }
+    VkFormat GetSwapchainImageFormat() { return g_swapchain_image_format; }
+
+    VkFormat GetDepthImageFormat() { return g_depth_image_format; }
 
     VkImage& GetDepthImage() { return g_depth_image; }
-    
-    VkFormat GetDepthImageFormat() { return g_depth_image_format; }
 }

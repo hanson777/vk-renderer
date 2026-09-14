@@ -84,7 +84,7 @@ void Shader::LoadModule(const std::string& filename, const std::string& entry_po
         return;
     }
 
-    SlangResult result = std::numeric_limits<int32_t>::max();
+    SlangResult result = 0; 
     Slang::ComPtr<slang::IEntryPoint> entry_point;
     result = slang_module->findEntryPointByName(entry_point_name.c_str(), entry_point.writeRef());
     if (SLANG_FAILED(result)) {

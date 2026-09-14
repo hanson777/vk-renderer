@@ -22,4 +22,9 @@ namespace vk_swapchain {
     void Shutdown();
     bool CreateSwapchain();
     void RecreateSwapchain();
+
+    VkSwapchainKHR GetSwapchain();
+    VkFormat GetSwapchainImageFormat();
+    VkFormat GetDepthImageFormat();
+    VkImage& GetDepthImage();
 }
