@@ -12,6 +12,6 @@ struct Tree {
     uint32_t m_last_root_node_id = UINT32_MAX;
     
     void init(size_t max_nodes);
-    std::pair<Node&, uint32_t> createNode();
+    uint32_t createNode();
     Node* getNode(uint32_t index);
 };

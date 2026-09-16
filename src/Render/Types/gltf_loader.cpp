@@ -27,15 +27,20 @@ void GltfLoader::loadGltf(const std::string& filename, SceneResources& scene_res
     const tg3_scene* scene = &model.scenes[model.default_scene != -1 ? model.default_scene : 0];
 
     Tree& tree = scene_resources.getTree();
+    tree.init(model.nodes_count);
+
+    uint32_t synthetic_root_node_id = tree.createNode();
+    tree.m_root_node_id = synthetic_root_node_id;
+    tree.m_last_root_node_id = synthetic_root_node_id;
+
+    uint32_t last_child_id = UINT32_MAX;
     for (uint32_t i = 0; i < scene->nodes_count; i++) {
-        uint32_t node_id = importNode(tree, model, scene->nodes[i], 0, tree.m_last_root_node_id, mesh_ids);
-        if (tree.m_root_node_id == UINT32_MAX) {
-            tree.m_root_node_id = node_id;
-            tree.m_last_root_node_id = node_id;
+        uint32_t child_id = importNode(tree, model, scene->nodes[i], synthetic_root_node_id, last_child_id, mesh_ids);
+
+        if (tree.getNode(synthetic_root_node_id)->getFirstChildId() == UINT32_MAX) {
+            tree.getNode(synthetic_root_node_id)->setFirstChildId(child_id);
         }
-        else {
-            tree.m_last_root_node_id = node_id;
-        }
+        last_child_id = child_id;
     }
 
     tg3_model_free(&model);
@@ -174,40 +179,38 @@ std::vector<uint32_t> GltfLoader::loadMeshes(const tg3_model& model, /*std::vect
     return mesh_ids;
 }
 
-uint32_t GltfLoader::importNode(Tree& tree, const tg3_model& model, int32_t node_index, uint32_t parent_id, uint32_t prev_sibling_id, std::vector<uint32_t>& mesh_ids) {
-    const tg3_node& tg3node = model.nodes[node_index];
-    auto [node, node_id] = tree.createNode();
-    node.m_parent_id = parent_id;
+uint32_t GltfLoader::importNode(Tree& tree, const tg3_model& model, int32_t model_node_id, uint32_t parent_id, uint32_t prev_sibling_id, std::vector<uint32_t>& mesh_ids) {
+    const tg3_node& tg3node = model.nodes[model_node_id];
+    uint32_t node_id = tree.createNode();
+    Node* node_ptr = tree.getNode(node_id);
+    node_ptr->setParentId(parent_id); 
 
     if (tg3node.has_matrix) {
-        glm::mat4 matrix(1.0f);
-        float* matrix_ptr = glm::value_ptr(matrix);
-        for (int i = 0; i < matrix.length(); i++) {
-            matrix_ptr[i] = static_cast<float>(tg3node.matrix[i]);
-        }
-        node.m_matrix = matrix;
+        node_ptr->setMatrix(glm::make_mat4(tg3node.matrix));
     }
     else {
-        node.m_translation = glm::vec3(tg3node.translation[0], tg3node.translation[1], tg3node.translation[2]);
-        node.m_rotation = glm::quat(tg3node.rotation[0], tg3node.rotation[1], tg3node.rotation[2], tg3node.rotation[3]);
-        node.m_scale = glm::vec3(tg3node.scale[0], tg3node.scale[1], tg3node.scale[2]);
+        node_ptr->setTranslation(glm::vec3(tg3node.translation[0], tg3node.translation[1], tg3node.translation[2]));
+        node_ptr->setRotation(glm::quat(tg3node.rotation[3], tg3node.rotation[0], tg3node.rotation[1], tg3node.rotation[2]));
+        node_ptr->setScale(glm::vec3(tg3node.scale[0], tg3node.scale[1], tg3node.scale[2]));
     }
 
     if (tg3node.mesh != -1) {
-        node.m_mesh_id = mesh_ids[tg3node.mesh];
+        node_ptr->setMeshId(mesh_ids[tg3node.mesh]);
     }
 
     if (prev_sibling_id != UINT32_MAX) {
-        tree.getNode(prev_sibling_id)->m_next_sibling_id = node_id;
+        tree.getNode(prev_sibling_id)->setNextSiblingId(node_id);
     }
 
-    uint32_t last_child_id = 0;
+    uint32_t last_child_id = UINT32_MAX;
     for (int i = 0; i < tg3node.children_count; i++) {
         int32_t child_index = tg3node.children[i];
+
+        // don't store a pointer after this recursive call, vector allocations can invalidate pointers
         last_child_id = importNode(tree, model, child_index, node_id, last_child_id, mesh_ids);
 
-        if (node.m_first_child_id == UINT32_MAX) {
-            node.m_first_child_id = last_child_id;
+        if (tree.getNode(node_id)->getFirstChildId() == UINT32_MAX) {
+            tree.getNode(node_id)->setFirstChildId(last_child_id);
         }
     }
 

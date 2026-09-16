@@ -3,13 +3,19 @@
 #include "Render/Types/Vertex.h"
 #include "Render/Types/Mesh.h"
 #include "Render/Types/vk_buffer.h"
+#include <glm/glm.hpp>
 #include <cstdint>
 #include <vector>
+
+struct Instance {
+    Node* node = nullptr;
+    glm::mat4 matrix = glm::mat4(1.0f);
+};
 
 struct SceneResources {
     private:
     Tree tree;
-    std::vector<Node> m_render_stack;
+    std::vector<Instance> m_render_stack;
     std::vector<Vertex> m_vertices;
     std::vector<uint32_t> m_indices;
     std::vector<Mesh> m_meshes;
@@ -21,7 +27,7 @@ struct SceneResources {
     public:
     Tree& getTree() { return tree; }
 
-    std::vector<Node>& getRenderStack() { return m_render_stack; }
+    std::vector<Instance>& getRenderStack() { return m_render_stack; }
     std::vector<Vertex>& getVertices() { return m_vertices; }
     std::vector<uint32_t>& getIndices() { return m_indices; }
     std::vector<Mesh>& getMeshes() { return m_meshes; }

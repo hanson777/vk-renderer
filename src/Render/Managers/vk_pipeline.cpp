@@ -3,7 +3,7 @@
 #include "Render/Managers/vk_device.h"
 #include "Render/Managers/vk_swapchain.h"
 #include "Render/Types/Shader.h"
-#include <iostream>
+#include "Render/Types/push_constants.h"
 #include <vector>
 #include <cstdint>
 #include <glm/glm.hpp>
@@ -15,16 +15,11 @@ namespace vk_pipeline {
 	std::vector<Shader> g_shaders;
 	std::vector<VkPipelineShaderStageCreateInfo> g_shader_stage_create_infos;
 
-    struct PushConstantBlock {
-        uint64_t scene_ref;
-        uint64_t vertex_ref;
-    };
-
 	bool Init() {
 		VkPushConstantRange range{
 			.stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
 			.offset = 0,
-			.size = sizeof(PushConstantBlock),
+			.size = sizeof(PushConstants),
 		};
 
 		VkPipelineLayoutCreateInfo pipeline_layout_create_info{

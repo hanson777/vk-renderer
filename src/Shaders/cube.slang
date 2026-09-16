@@ -21,6 +21,7 @@ struct PushConstants
 {
     MatrixRef* matrix_ref;
     Vertex* vertices;
+    float4x4 model;
 };
 
 [[vk::push_constant]]
@@ -32,7 +33,7 @@ VertexOutput vertMain(uint vid : SV_VulkanVertexID)
     Vertex vert = pc.vertices[vid];
 
     VertexOutput output;
-    output.sv_position = mul(pc.matrix_ref.mvp, float4(vert.position, 1.0));
+    output.sv_position = mul(pc.matrix_ref.mvp, mul(pc.model, float4(vert.position, 1.0)));
     output.color = (vert.position + 1.0f) / 2.0f;
 
     return output;

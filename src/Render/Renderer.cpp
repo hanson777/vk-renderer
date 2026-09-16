@@ -5,33 +5,31 @@
 #include "Render/Managers/vk_pipeline.h"
 #include "Render/Managers/vk_sync.h"
 #include "Render/Types/Shader.h"
-#include "Camera/Orbit.h"
-#include "Core/Window.h"
 #include "Render/Types/vk_buffer.h"
-#include "Render/Types/Scene.h"
 #include "Render/Types/Node.h"
 #include "Render/Types/scene_resources.h"
 #include "Render/Types/gltf_loader.h"
+#include "Render/Types/push_constants.h"
+#include "Camera/Orbit.h"
+#include "Core/Window.h"
+#include <glm/glm.hpp>
+#include <glm/ext/matrix_clip_space.hpp>
 #include <cstdint>
 #include <vector>
 #include <array>
 #include <string>
-#include <glm/glm.hpp>
-#include <glm/ext/matrix_clip_space.hpp>
 
 namespace Renderer {
 
 	uint32_t g_frame_count = 0;
 	uint64_t g_next_signal_value = vk_sync::g_timeline_value + 1;
 
-    Scene scene;
+    struct {
+        glm::mat4 mvp;
+        std::array<Buffer, MAX_FRAMES_IN_FLIGHT> buffers;
+    } scene;
     SceneResources scene_resources;
     GltfLoader gltf_loader;
-
-    struct PushConstantBlock {
-        uint64_t scene_ref;
-        uint64_t vertex_ref;
-    };
 
     void Shutdown() {
         vkDeviceWaitIdle(vk_device::GetDevice());
@@ -43,12 +41,15 @@ namespace Renderer {
     }
 
     void PrepareUniformBuffers() {
-        gltf_loader.loadGltf("/Users/hanson/graphics/vk-renderer/res/cube/scene.gltf", scene_resources);
+        // gltf_loader.loadGltf("/Users/hanson/graphics/vk-renderer/res/ABeautifulGame.glb", scene_resources);
+        // gltf_loader.loadGltf("/Users/hanson/Downloads/revolver_navy_colt_1851_silver/scene.gltf", scene_resources);
+        gltf_loader.loadGltf("/Users/hanson/graphics/vk-renderer/res/MosquitoInAmber.glb", scene_resources);
         Node* root = scene_resources.getTree().getNode(scene_resources.getTree().m_root_node_id);
-        root->m_scale = glm::vec3(0.5, 0.5, 0.5);
-        root->m_translation = glm::vec3(0, -3, 0);
+        root->setTranslation(glm::vec3(0, 0, 0));
+        root->setRotation(glm::quat(1, 0, 0, 0));
+        root->setScale(glm::vec3(10, 10, 10));
 
-        for (uint32_t i = 0; i < 2; i++) {
+        for (uint32_t i = 0; i < scene.buffers.size(); i++) {
             scene.buffers[i] = createBuffer(VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, sizeof(glm::mat4), true, VMA_MEMORY_USAGE_AUTO);
             scene.buffers[i].map();
         }
@@ -57,7 +58,7 @@ namespace Renderer {
     void UpdateUniformBuffers(int frame_index) {
         glm::mat4 projection = glm::perspective(glm::radians(Orbit::g_fov), (float)Window::GetWidth() / Window::GetHeight(), 0.1f, 100.0f);
         projection[1][1] *= -1;
-        scene.mvp = glm::mat4(1.0f) * projection * Orbit::GetViewMatrix();
+        scene.mvp = projection * Orbit::GetViewMatrix();
         memcpy(scene.buffers[frame_index].mapped, &scene.mvp, sizeof(glm::mat4));
     }
 
@@ -65,7 +66,7 @@ namespace Renderer {
 		const VkDevice& device = vk_device::GetDevice();
 
 		if (vk_swapchain::g_recreate_swapchain) {
-			vkDeviceWaitIdle(device);
+			vkDeviceWaitIdle(device); 
 			vk_swapchain::RecreateSwapchain();
 			vk_swapchain::g_recreate_swapchain = false;
 		}
@@ -202,17 +203,45 @@ namespace Renderer {
             Buffer* vertex_buffer = scene_resources.getBuffer(scene_resources.getVertexBufferId()); 
             Buffer* index_buffer = scene_resources.getBuffer(scene_resources.getIndexBufferId()); 
 
-            PushConstantBlock refs{};
-            refs.scene_ref = scene.buffers[frame_index].address;
-            refs.vertex_ref = vertex_buffer->address;
-
-            vkCmdPushConstants(command_buffer, vk_pipeline::g_pipeline_layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstantBlock), &refs);
+            vkCmdBindIndexBuffer(command_buffer, index_buffer->buffer, 0, VK_INDEX_TYPE_UINT32);
 
             UpdateUniformBuffers(frame_index);
 
-            // replace this with a index array length
-            vkCmdBindIndexBuffer(command_buffer, index_buffer->buffer, 0, VK_INDEX_TYPE_UINT32);
-            vkCmdDrawIndexed(command_buffer, 36, 1, 0, 0, 0);
+            std::vector<Instance>& render_stack = scene_resources.getRenderStack(); 
+            render_stack.clear();
+            uint32_t node_id = scene_resources.getTree().m_root_node_id;
+            while (node_id != UINT32_MAX) {
+                Node* node = scene_resources.getTree().getNode(node_id);
+                render_stack.push_back({ node, node->getMatrix() });
+                node_id = node->getNextSiblingId();
+            };
+
+            while (!render_stack.empty()) {
+                Instance instance = render_stack.back();
+                render_stack.pop_back();
+                glm::mat4 world_matrix = instance.matrix;
+
+                if (instance.node->getMeshId() != UINT32_MAX) {
+                    PushConstants refs{
+                        .scene_ref = scene.buffers[frame_index].address,
+                        .vertex_ref = vertex_buffer->address,
+                        .model = world_matrix,
+                    };
+                    vkCmdPushConstants(command_buffer, vk_pipeline::g_pipeline_layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstants), &refs);
+
+                    Mesh& mesh = scene_resources.getMeshes()[instance.node->getMeshId()];
+                    for (Primitive& primitive : mesh.primitives) {
+                        vkCmdDrawIndexed(command_buffer, primitive.index_count, 1, primitive.first_index, primitive.vertex_start, 0);
+                    }
+                }
+
+                uint32_t child_node_id = instance.node->getFirstChildId();
+                while (child_node_id != UINT32_MAX) {
+                    Node* child = scene_resources.getTree().getNode(child_node_id);
+                    render_stack.push_back({ child, world_matrix * child->getMatrix() });
+                    child_node_id = child->getNextSiblingId();
+                }
+            }
 		}
 		vkCmdEndRendering(command_buffer);
 

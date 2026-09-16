@@ -25,16 +25,17 @@ struct Node {
         m_dirty = true; 
     }
 
-    void setMeshId(uint32_t id) { 
-        m_mesh_id = id; 
-    }
-
     void setMatrix(const glm::mat4& matrix);  
 
     uint32_t getMeshId() const { return m_mesh_id; }
     uint32_t getParentId() const { return m_parent_id; }
     uint32_t getNextSiblingId() const { return m_next_sibling_id; }
     uint32_t getFirstChildId() const { return m_first_child_id; }
+
+    void setMeshId(uint32_t id) { m_mesh_id = id; }
+    void setParentId(uint32_t id) { m_parent_id = id; }
+    void setNextSiblingId(uint32_t id) { m_next_sibling_id = id; }
+    void setFirstChildId(uint32_t id) { m_first_child_id = id; }
 
     private:
     friend struct Tree;
