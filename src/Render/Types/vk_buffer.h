@@ -27,3 +27,7 @@ private:
 
 Buffer createBuffer(VkBufferUsageFlags usage, VkDeviceSize size, bool mappable, VmaMemoryUsage memory_usage);
 void copyBuffer(Buffer& src, Buffer& dst, VkDeviceSize size);
+
+VkCommandPool createCommandPool(uint32_t queue_family_index, VkCommandPoolCreateFlags flags);
+VkCommandBuffer createCommandBuffer(VkCommandPool cmd_pool, VkCommandBufferLevel level, bool begin);
+void flushCommandBuffer(VkCommandBuffer cmd_buffer, VkQueue queue, VkCommandPool cmd_pool, bool free);
