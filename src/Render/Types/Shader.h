@@ -29,4 +29,3 @@ struct Shader {
 private:
 	void set_shader_stage(const ShaderStage stage);
 };
-

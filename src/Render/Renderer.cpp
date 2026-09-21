@@ -37,13 +37,13 @@ namespace Renderer {
             buffer.unmap();
             buffer = {};
         }
-        scene_resources.destroyBuffers();
+        scene_resources.shutdown();
     }
 
     void PrepareUniformBuffers() {
-        // gltf_loader.loadGltf("/Users/hanson/graphics/vk-renderer/res/ABeautifulGame.glb", scene_resources);
+        gltf_loader.loadGltf("/Users/hanson/graphics/vk-renderer/res/ABeautifulGame.glb", scene_resources);
         // gltf_loader.loadGltf("/Users/hanson/Downloads/revolver_navy_colt_1851_silver/scene.gltf", scene_resources);
-        gltf_loader.loadGltf("/Users/hanson/graphics/vk-renderer/res/MosquitoInAmber.glb", scene_resources);
+        // gltf_loader.loadGltf("/Users/hanson/graphics/vk-renderer/res/MosquitoInAmber.glb", scene_resources);
         Node* root = scene_resources.getTree().getNode(scene_resources.getTree().m_root_node_id);
         root->setTranslation(glm::vec3(0, 0, 0));
         root->setRotation(glm::quat(1, 0, 0, 0));

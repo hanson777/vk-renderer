@@ -22,6 +22,7 @@ struct SceneResources {
     std::vector<Instance> m_render_stack;
     std::vector<Vertex> m_vertices;
     std::vector<uint32_t> m_indices;
+    std::vector<uint8_t> m_image_buffer;
     std::vector<Image> m_images;
     std::vector<VkSampler> m_samplers;
     std::vector<Texture> m_textures;
@@ -37,11 +38,14 @@ struct SceneResources {
     uint32_t m_fallback_material_id = UINT32_MAX;
 
     public:
+    void shutdown();
+
     Tree& getTree() { return tree; }
 
     std::vector<Instance>& getRenderStack() { return m_render_stack; }
     std::vector<Vertex>& getVertices() { return m_vertices; }
     std::vector<uint32_t>& getIndices() { return m_indices; }
+    std::vector<uint8_t>& getImageBuffer() { return m_image_buffer; }
     std::vector<Image>& getImages() { return m_images; }
     std::vector<VkSampler>& getSamplers() { return m_samplers; }
     std::vector<Texture>& getTextures() { return m_textures; }
@@ -51,6 +55,9 @@ struct SceneResources {
     uint32_t addBuffer(Buffer buffer);
     Buffer* getBuffer(uint32_t id);
     void destroyBuffers() { m_buffers.clear(); }
+
+    void destroyImages();
+    void destroySamplers();
 
     uint32_t getVertexBufferId() { return m_vertex_buffer_id; }
     uint32_t getIndexBufferId() { return m_index_buffer_id; }

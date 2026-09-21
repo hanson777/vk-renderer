@@ -10,7 +10,10 @@ struct GltfLoader {
     
     private:
     void loadFallbacks(SceneResources& scene_resources);
-    std::vector<uint32_t> loadImages(const tg3_model& model, SceneResources& scene_resources);
+
+    std::vector<ImageData> loadImageData(const tg3_model& model, SceneResources& scene_resources);
+    std::vector<uint32_t> uploadImageData(const tg3_model& model, const std::vector<ImageData>& image_data, SceneResources& scene_resources);
+
     std::vector<uint32_t> loadSamplers(const tg3_model& model, SceneResources& scene_resources);
     std::vector<uint32_t> loadTextures(const tg3_model& model, const std::vector<uint32_t>& image_ids, const std::vector<uint32_t> sampler_ids, SceneResources& scene_resources);
     std::vector<uint32_t> loadMaterials(const tg3_model& model, const std::vector<uint32_t>& texture_ids, SceneResources& scene_resources);

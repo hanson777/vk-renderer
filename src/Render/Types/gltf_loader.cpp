@@ -4,7 +4,9 @@
 #include "Render/Types/Texture.h"
 #include "Render/Types/Material.h"
 #include "Render/Managers/vk_device.h"
+#include "Render/Managers/vk_memory.h"
 #include <tiny_gltf_v3.h>
+#include <stb_image.h>
 #include <glm/gtc/type_ptr.hpp>
 #include <vector>
 #include <cstdint>
@@ -29,7 +31,10 @@ void GltfLoader::loadGltf(const std::string& filename, SceneResources& scene_res
     }
 
     loadFallbacks(scene_resources);
-    std::vector<uint32_t> image_ids = loadImages(model, scene_resources);
+
+    std::vector<ImageData> image_data = loadImageData(model, scene_resources);
+    std::vector<uint32_t> image_ids = uploadImageData(model, image_data, scene_resources);
+
     std::vector<uint32_t> sampler_ids = loadSamplers(model, scene_resources);
     std::vector<uint32_t> texture_ids = loadTextures(model, image_ids, sampler_ids, scene_resources);
     std::vector<uint32_t> material_ids = loadMaterials(model, texture_ids, scene_resources);
@@ -70,8 +75,8 @@ void GltfLoader::loadFallbacks(SceneResources& scene_resources) {
     uint32_t fallback_material_id = scene_resources.getFallbackMaterialId();
 
     if (fallback_image_id == UINT32_MAX) {
-        uint8_t white_pixel_data[4] = {255, 255, 255, 255};
         fallback_image_id = static_cast<uint32_t>(images.size());
+        uint8_t white_pixel_data[4] = {255, 255, 255, 255};
         images.push_back(createImage(&white_pixel_data[0], 1, 1, 4));
         scene_resources.setFallbackImageId(fallback_image_id);
     }
@@ -106,12 +111,167 @@ void GltfLoader::loadFallbacks(SceneResources& scene_resources) {
     }
 }
 
+std::vector<ImageData> GltfLoader::loadImageData(const tg3_model& model, SceneResources& scene_resources) {
+    std::vector<ImageData> image_datas(model.images_count);
+    std::vector<uint8_t>& image_buffer = scene_resources.getImageBuffer();
+    
+    for (int i = 0; i < model.images_count; i++) {
+        const tg3_str& uri = model.images[i].uri;
+        std::string image_path(uri.data, uri.len);
+        int width, height, channels;
+        uint8_t* data = stbi_load(image_path.c_str(), &width, &height, &channels, 4);
+        if (data == nullptr) {
+            std::cerr << "[ERROR::loadImageData] failed to load image at path: " << image_path << ", using white pixel\n";
+            uint8_t white_pixel_data[4] = { 255, 255, 255, 255 };
+            size_t offset = image_buffer.size();
+            image_buffer.insert(image_buffer.end(), white_pixel_data, white_pixel_data + 4);
+            image_datas[i] = {
+                .offset = offset,
+                .size = 4,
+                .width = 1,
+                .height = 1,
+                .channels = 4,
+                .id = static_cast<uint32_t>(i),
+            };
+
+            continue;
+        }
+
+        size_t size = width * height * 4;
+        size_t offset = image_buffer.size();
+        image_buffer.insert(image_buffer.end(), data, data + size);
+
+        stbi_image_free(data);
+
+        image_datas[i] = {
+            .offset = offset,
+            .size = size,
+            .width = static_cast<uint32_t>(width),
+            .height = static_cast<uint32_t>(height),
+            .channels = 4,
+            .id = static_cast<uint32_t>(i),
+        };
+    }
+
+    return image_datas;
+}
+
+std::vector<uint32_t> GltfLoader::uploadImageData(const tg3_model& model, const std::vector<ImageData>& image_data, SceneResources& scene_resources) {
+    std::vector<uint8_t>& image_buffer = scene_resources.getImageBuffer();
+    std::vector<Image>& images = scene_resources.getImages();
+    std::vector<uint32_t> image_ids(image_data.size());
+    Buffer imgs_staging = createBuffer(VK_BUFFER_USAGE_TRANSFER_SRC_BIT, image_buffer.size(), true, VMA_MEMORY_USAGE_AUTO_PREFER_HOST);
+    imgs_staging.map();
+    memcpy(imgs_staging.mapped, image_buffer.data(), image_buffer.size());
+    imgs_staging.unmap();
+
+    VkCommandPool cmd_pool = createCommandPool(vk_device::GetQueueIndex(), VK_COMMAND_POOL_CREATE_TRANSIENT_BIT);
+    VkCommandBuffer cmd_buffer = createCommandBuffer(cmd_pool, VK_COMMAND_BUFFER_LEVEL_PRIMARY, true);
+
+    for (int i = 0; i < image_data.size(); i++) {
+        const ImageData& raw_image = image_data[i];
+        image_ids[i] = raw_image.id;
+
+        VkFormat image_format = VK_FORMAT_R8G8B8A8_SRGB;
+        VkImageCreateInfo image_ci{
+            .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+            .imageType = VK_IMAGE_TYPE_2D,
+            .format = image_format,
+            .extent{.width = raw_image.width, .height = raw_image.height, .depth = 1},
+            .mipLevels = 1,
+            .arrayLayers = 1,
+            .samples = VK_SAMPLE_COUNT_1_BIT,
+            .tiling = VK_IMAGE_TILING_OPTIMAL,
+            .usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+            .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+        };
+
+        VmaAllocationCreateInfo alloc_ci{ .usage = VMA_MEMORY_USAGE_AUTO };
+        Image image;
+        VK_CHECK(vmaCreateImage(vk_memory::GetAllocator(), &image_ci, &alloc_ci, &image.image, &image.allocation, nullptr));
+
+        VkImageViewCreateInfo image_view_ci{
+            .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+            .image = image.image,
+            .viewType = VK_IMAGE_VIEW_TYPE_2D,
+            .format = image_format,
+            .subresourceRange{
+                .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+                .levelCount = 1,
+                .layerCount = 1,
+            },
+        };
+        VK_CHECK(vkCreateImageView(vk_device::GetDevice(), &image_view_ci, nullptr, &image.image_view));
+
+        VkImageMemoryBarrier2 transfer_barrier{
+            .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
+            .srcStageMask = VK_PIPELINE_STAGE_2_NONE,
+                .srcAccessMask = VK_ACCESS_2_NONE,
+                .dstStageMask = VK_PIPELINE_STAGE_2_COPY_BIT,
+                .dstAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                .oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+                .newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                .image = image.image,
+                .subresourceRange{
+                    .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+                    .baseMipLevel = 0,
+                    .levelCount = 1,
+                    .baseArrayLayer = 0,
+                    .layerCount = 1,
+                }
+            };
+            VkDependencyInfo transfer_dep_info{
+                .sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
+                .imageMemoryBarrierCount = 1,
+                .pImageMemoryBarriers = &transfer_barrier
+            };
+            vkCmdPipelineBarrier2(cmd_buffer, &transfer_dep_info);
+
+            VkBufferImageCopy image_copy{
+                .bufferOffset = raw_image.offset,
+                .imageSubresource = {.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, .mipLevel = 0, .baseArrayLayer = 0, .layerCount = 1},
+                .imageExtent = {.width = raw_image.width, .height = raw_image.height, .depth = 1},
+            };
+            vkCmdCopyBufferToImage(cmd_buffer, imgs_staging.buffer, image.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &image_copy);
+
+            VkImageMemoryBarrier2 shader_read_barrier{
+                .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
+                .srcStageMask = VK_PIPELINE_STAGE_2_COPY_BIT,
+                .srcAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT,
+                .dstStageMask = VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT,
+                .dstAccessMask = VK_ACCESS_2_SHADER_READ_BIT,
+                .oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                .newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                .image = image.image,
+                .subresourceRange
+                {
+                    .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+                    .baseMipLevel = 0,
+                    .levelCount = 1,
+                    .baseArrayLayer = 0,
+                    .layerCount = 1,
+                }
+            };
+            VkDependencyInfo shader_read_dep_info{
+                .sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
+                .imageMemoryBarrierCount = 1,
+                .pImageMemoryBarriers = &shader_read_barrier,
+            };
+            vkCmdPipelineBarrier2(cmd_buffer, &shader_read_dep_info);
+            images.push_back(image);
+    }
+
+    flushCommandBuffer(cmd_buffer, vk_device::GetQueue(), cmd_pool, true);
+    vkDestroyCommandPool(vk_device::GetDevice(), cmd_pool, nullptr);
+    return image_ids;
+}
+
 std::vector<uint32_t> GltfLoader::loadSamplers(const tg3_model& model, SceneResources& scene_resources) {
     std::vector<uint32_t> sampler_ids(model.samplers_count);
     std::vector<Texture>& textures = scene_resources.getTextures();
     std::vector<VkSampler>& samplers = scene_resources.getSamplers();
     for (int i = 0; i < model.samplers_count; i++) {
-        const tg3_sampler &tg3sampler = model.samplers[i];
+        const tg3_sampler& tg3sampler = model.samplers[i];
 
 		static const std::unordered_map<int32_t, std::tuple<VkFilter, VkSamplerMipmapMode, float>> filter_map{
 			{ TG3_TEXTURE_FILTER_NEAREST, { VK_FILTER_NEAREST, VK_SAMPLER_MIPMAP_MODE_NEAREST, 0.25f } },
@@ -192,7 +352,7 @@ std::vector<uint32_t> GltfLoader::loadMaterials(const tg3_model& model, const st
     memcpy(mat_staging.mapped, materials.data(), mats_size); 
     mat_staging.unmap();
 
-    Buffer mat_buffer = createBuffer(VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, mats_size, false, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE);
+    Buffer mat_buffer = createBuffer(VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, mats_size, false, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE);
     copyBuffer(mat_staging, mat_buffer, mats_size);
 
     uint32_t mat_buffer_id = scene_resources.addBuffer(std::move(mat_buffer));

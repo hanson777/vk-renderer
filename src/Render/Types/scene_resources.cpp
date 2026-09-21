@@ -1,6 +1,14 @@
 #include "scene_resources.h"
+#include "Render/Managers/vk_device.h"
+#include "Render/Managers/vk_memory.h"
 #include <vector>
 #include <iostream>
+
+void SceneResources::shutdown() {
+    destroyBuffers();
+    destroyImages();
+    destroySamplers();
+}
 
 uint32_t SceneResources::addBuffer(Buffer buffer) {
     uint32_t id = m_buffers.size();
@@ -14,4 +22,17 @@ Buffer* SceneResources::getBuffer(uint32_t id) {
         return nullptr;
     }
     return &m_buffers[id];
+}
+
+void SceneResources::destroyImages() {
+    for (Image& img : m_images) {
+        vkDestroyImageView(vk_device::GetDevice(), img.image_view, nullptr);
+        vmaDestroyImage(vk_memory::GetAllocator(), img.image, img.allocation);
+    }
+}
+
+void SceneResources::destroySamplers() {
+    for (VkSampler& sampler : m_samplers) {
+        vkDestroySampler(vk_device::GetDevice(), sampler, nullptr);
+    }
 }
