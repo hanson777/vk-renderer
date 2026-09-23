@@ -28,6 +28,10 @@ void Buffer::map() {
     VK_CHECK(vmaMapMemory(vk_memory::GetAllocator(), allocation, &mapped));
 }
 
+void Buffer::flush(VkDeviceSize size, VkDeviceSize offset) {
+    VK_CHECK(vmaFlushAllocation(vk_memory::GetAllocator(), allocation, offset, size));
+}
+
 void Buffer::unmap() {
     if (mapped != nullptr) {
         vmaUnmapMemory(vk_memory::GetAllocator(), allocation);

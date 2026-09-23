@@ -5,11 +5,12 @@
 #include "Render/Types/vk_buffer.h"
 #include <cstring>
 
-Image createImage(uint8_t* image_data, uint32_t width, uint32_t height, int channels) {
+GpuImage createImage(uint8_t* image_data, uint32_t width, uint32_t height, int channels) {
     size_t image_size = width * height * channels;
     Buffer img_staging = createBuffer(VK_BUFFER_USAGE_TRANSFER_SRC_BIT, image_size, true, VMA_MEMORY_USAGE_AUTO_PREFER_HOST);
     img_staging.map();
     memcpy(img_staging.mapped, image_data, image_size); 
+    img_staging.flush(image_size, 0);
     img_staging.unmap();
 
     VkFormat image_format = VK_FORMAT_R8G8B8A8_SRGB;
@@ -27,7 +28,7 @@ Image createImage(uint8_t* image_data, uint32_t width, uint32_t height, int chan
     };
 
     VmaAllocationCreateInfo alloc_ci{ .usage = VMA_MEMORY_USAGE_AUTO };
-    Image image;
+    GpuImage image;
     VK_CHECK(vmaCreateImage(vk_memory::GetAllocator(), &image_ci, &alloc_ci, &image.image, &image.allocation, nullptr));
 
     VkImageViewCreateInfo image_view_ci{

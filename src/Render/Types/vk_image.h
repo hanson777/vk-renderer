@@ -7,13 +7,12 @@ struct ImageData {
     uint32_t width = 0;
     uint32_t height = 0;
     int channels = 0;
-    uint32_t id = UINT32_MAX;
 };
 
-struct Image {
+struct GpuImage {
     VkImage image = VK_NULL_HANDLE;
     VkImageView image_view = VK_NULL_HANDLE;
     VmaAllocation allocation = VK_NULL_HANDLE;
 };
 
-Image createImage(uint8_t* image_data, uint32_t width, uint32_t height, int channels);
+GpuImage createImage(uint8_t* image_data, uint32_t width, uint32_t height, int channels);

@@ -12,16 +12,39 @@ struct VertexOutput
     float4 sv_position : SV_Position;
 };
 
-struct MatrixRef 
+struct SceneRef 
 {
     float4x4 mvp;
 };
 
+struct Material
+{
+    float4 base_color;
+    uint texture_index;
+};
+
+struct MaterialBuffer
+{
+    Material materials[];
+};
+
+struct Instance
+{
+    float4x4 world_matrix;
+    uint material_index;
+};
+
+struct InstanceBuffer
+{
+    Instance[] instances;
+};
+
 struct PushConstants 
 {
-    MatrixRef* matrix_ref;
+    SceneRef* scene_ref;
     Vertex* vertices;
-    float4x4 model;
+    MaterialBuffer* material_ref;
+    InstanceBuffer* instance_ref;
 };
 
 [[vk::push_constant]]
@@ -33,7 +56,7 @@ VertexOutput vertMain(uint vid : SV_VulkanVertexID)
     Vertex vert = pc.vertices[vid];
 
     VertexOutput output;
-    output.sv_position = mul(pc.matrix_ref.mvp, mul(pc.model, float4(vert.position, 1.0)));
+    output.sv_position = mul(pc.scene_ref.mvp, mul(pc.model, float4(vert.position, 1.0)));
     output.color = (vert.position + 1.0f) / 2.0f;
 
     return output;

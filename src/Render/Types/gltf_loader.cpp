@@ -64,7 +64,7 @@ void GltfLoader::loadGltf(const std::string& filename, SceneResources& scene_res
 }
 
 void GltfLoader::loadFallbacks(SceneResources& scene_resources) {
-    std::vector<Image>& images = scene_resources.getImages();
+    std::vector<GpuImage>& images = scene_resources.getImages();
     std::vector<VkSampler>& samplers = scene_resources.getSamplers();
     std::vector<Texture>& textures = scene_resources.getTextures();
     std::vector<Material>& materials = scene_resources.getMaterials();
@@ -121,7 +121,7 @@ std::vector<ImageData> GltfLoader::loadImageData(const tg3_model& model, SceneRe
         int width, height, channels;
         uint8_t* data = stbi_load(image_path.c_str(), &width, &height, &channels, 4);
         if (data == nullptr) {
-            std::cerr << "[ERROR::loadImageData] failed to load image at path: " << image_path << ", using white pixel\n";
+            std::cerr << "[ERROR::loadImageData] failed to load image at path: " << image_path.c_str() << ", using white pixel\n";
             uint8_t white_pixel_data[4] = { 255, 255, 255, 255 };
             size_t offset = image_buffer.size();
             image_buffer.insert(image_buffer.end(), white_pixel_data, white_pixel_data + 4);
@@ -131,7 +131,6 @@ std::vector<ImageData> GltfLoader::loadImageData(const tg3_model& model, SceneRe
                 .width = 1,
                 .height = 1,
                 .channels = 4,
-                .id = static_cast<uint32_t>(i),
             };
 
             continue;
@@ -149,7 +148,6 @@ std::vector<ImageData> GltfLoader::loadImageData(const tg3_model& model, SceneRe
             .width = static_cast<uint32_t>(width),
             .height = static_cast<uint32_t>(height),
             .channels = 4,
-            .id = static_cast<uint32_t>(i),
         };
     }
 
@@ -158,11 +156,12 @@ std::vector<ImageData> GltfLoader::loadImageData(const tg3_model& model, SceneRe
 
 std::vector<uint32_t> GltfLoader::uploadImageData(const tg3_model& model, const std::vector<ImageData>& image_data, SceneResources& scene_resources) {
     std::vector<uint8_t>& image_buffer = scene_resources.getImageBuffer();
-    std::vector<Image>& images = scene_resources.getImages();
+    std::vector<GpuImage>& images = scene_resources.getImages();
     std::vector<uint32_t> image_ids(image_data.size());
     Buffer imgs_staging = createBuffer(VK_BUFFER_USAGE_TRANSFER_SRC_BIT, image_buffer.size(), true, VMA_MEMORY_USAGE_AUTO_PREFER_HOST);
     imgs_staging.map();
     memcpy(imgs_staging.mapped, image_buffer.data(), image_buffer.size());
+    imgs_staging.flush(image_buffer.size(), 0);
     imgs_staging.unmap();
 
     VkCommandPool cmd_pool = createCommandPool(vk_device::GetQueueIndex(), VK_COMMAND_POOL_CREATE_TRANSIENT_BIT);
@@ -170,7 +169,6 @@ std::vector<uint32_t> GltfLoader::uploadImageData(const tg3_model& model, const 
 
     for (int i = 0; i < image_data.size(); i++) {
         const ImageData& raw_image = image_data[i];
-        image_ids[i] = raw_image.id;
 
         VkFormat image_format = VK_FORMAT_R8G8B8A8_SRGB;
         VkImageCreateInfo image_ci{
@@ -187,7 +185,7 @@ std::vector<uint32_t> GltfLoader::uploadImageData(const tg3_model& model, const 
         };
 
         VmaAllocationCreateInfo alloc_ci{ .usage = VMA_MEMORY_USAGE_AUTO };
-        Image image;
+        GpuImage image;
         VK_CHECK(vmaCreateImage(vk_memory::GetAllocator(), &image_ci, &alloc_ci, &image.image, &image.allocation, nullptr));
 
         VkImageViewCreateInfo image_view_ci{
@@ -258,7 +256,10 @@ std::vector<uint32_t> GltfLoader::uploadImageData(const tg3_model& model, const 
                 .pImageMemoryBarriers = &shader_read_barrier,
             };
             vkCmdPipelineBarrier2(cmd_buffer, &shader_read_dep_info);
+
+            uint32_t image_id = static_cast<uint32_t>(images.size());
             images.push_back(image);
+            image_ids[i] = image_id;
     }
 
     flushCommandBuffer(cmd_buffer, vk_device::GetQueue(), cmd_pool, true);
@@ -350,6 +351,7 @@ std::vector<uint32_t> GltfLoader::loadMaterials(const tg3_model& model, const st
     Buffer mat_staging = createBuffer(VK_BUFFER_USAGE_TRANSFER_SRC_BIT, mats_size, true, VMA_MEMORY_USAGE_AUTO);
     mat_staging.map();
     memcpy(mat_staging.mapped, materials.data(), mats_size); 
+    mat_staging.flush(mats_size, 0);
     mat_staging.unmap();
 
     Buffer mat_buffer = createBuffer(VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, mats_size, false, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE);
@@ -480,7 +482,9 @@ std::vector<uint32_t> GltfLoader::loadMeshes(const tg3_model& model, const std::
     index_staging.map();
     memcpy(vertex_staging.mapped, vertices.data(), verts_size); 
     memcpy(index_staging.mapped, indices.data(), indices_size); 
+    vertex_staging.flush(verts_size, 0);
     vertex_staging.unmap();
+    index_staging.flush(indices_size, 0);
     index_staging.unmap();
 
     Buffer vertex_buffer = createBuffer(VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, verts_size, false, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE);

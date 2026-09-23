@@ -11,19 +11,18 @@
 #include <cstdint>
 #include <vector>
 
-struct Instance {
-    Node* node = nullptr;
-    glm::mat4 matrix = glm::mat4(1.0f);
+struct GpuInstance {
+    glm::mat4 model;
+    uint32_t material_index;
 };
 
 struct SceneResources {
     private:
     Tree tree;
-    std::vector<Instance> m_render_stack;
     std::vector<Vertex> m_vertices;
     std::vector<uint32_t> m_indices;
     std::vector<uint8_t> m_image_buffer;
-    std::vector<Image> m_images;
+    std::vector<GpuImage> m_images;
     std::vector<VkSampler> m_samplers;
     std::vector<Texture> m_textures;
     std::vector<Material> m_materials;
@@ -42,11 +41,10 @@ struct SceneResources {
 
     Tree& getTree() { return tree; }
 
-    std::vector<Instance>& getRenderStack() { return m_render_stack; }
     std::vector<Vertex>& getVertices() { return m_vertices; }
     std::vector<uint32_t>& getIndices() { return m_indices; }
     std::vector<uint8_t>& getImageBuffer() { return m_image_buffer; }
-    std::vector<Image>& getImages() { return m_images; }
+    std::vector<GpuImage>& getImages() { return m_images; }
     std::vector<VkSampler>& getSamplers() { return m_samplers; }
     std::vector<Texture>& getTextures() { return m_textures; }
     std::vector<Material>& getMaterials() { return m_materials; }

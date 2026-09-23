@@ -11,7 +11,7 @@ void SceneResources::shutdown() {
 }
 
 uint32_t SceneResources::addBuffer(Buffer buffer) {
-    uint32_t id = m_buffers.size();
+    uint32_t id = static_cast<uint32_t>(m_buffers.size());
     m_buffers.push_back(std::move(buffer));
     return id;
 }
@@ -25,7 +25,7 @@ Buffer* SceneResources::getBuffer(uint32_t id) {
 }
 
 void SceneResources::destroyImages() {
-    for (Image& img : m_images) {
+    for (GpuImage& img : m_images) {
         vkDestroyImageView(vk_device::GetDevice(), img.image_view, nullptr);
         vmaDestroyImage(vk_memory::GetAllocator(), img.image, img.allocation);
     }

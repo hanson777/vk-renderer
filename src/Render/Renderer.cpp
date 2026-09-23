@@ -34,6 +34,7 @@ namespace Renderer {
     void Shutdown() {
         vkDeviceWaitIdle(vk_device::GetDevice());
         for (Buffer& buffer : scene.buffers) {
+            buffer.flush(sizeof(glm::mat4), 0);
             buffer.unmap();
             buffer = {};
         }
@@ -41,9 +42,9 @@ namespace Renderer {
     }
 
     void PrepareUniformBuffers() {
-        gltf_loader.loadGltf("/Users/hanson/graphics/vk-renderer/res/ABeautifulGame.glb", scene_resources);
+        // gltf_loader.loadGltf("/Users/hanson/graphics/vk-renderer/res/ABeautifulGame.glb", scene_resources);
         // gltf_loader.loadGltf("/Users/hanson/Downloads/revolver_navy_colt_1851_silver/scene.gltf", scene_resources);
-        // gltf_loader.loadGltf("/Users/hanson/graphics/vk-renderer/res/MosquitoInAmber.glb", scene_resources);
+        gltf_loader.loadGltf("/Users/hanson/graphics/vk-renderer/res/MosquitoInAmber.glb", scene_resources);
         Node* root = scene_resources.getTree().getNode(scene_resources.getTree().m_root_node_id);
         root->setTranslation(glm::vec3(0, 0, 0));
         root->setRotation(glm::quat(1, 0, 0, 0));
@@ -53,6 +54,68 @@ namespace Renderer {
             scene.buffers[i] = createBuffer(VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, sizeof(glm::mat4), true, VMA_MEMORY_USAGE_AUTO);
             scene.buffers[i].map();
         }
+
+        std::vector<GpuInstance> gpu_instances;
+        std::vector<VkDrawIndexedIndirectCommand> draw_commands;
+        std::vector<std::pair<uint32_t, glm::mat4>> node_stack;
+
+        node_stack.push_back({
+            scene_resources.getTree().m_root_node_id,
+            glm::mat4(1.0f),
+        });
+
+        while (!node_stack.empty()) {
+            const auto [node_id, parent_world] = node_stack.back();
+            node_stack.pop_back();
+
+            Node* node = scene_resources.getTree().getNode(node_id);
+            glm::mat4 world_matrix = parent_world * node->getMatrix();
+
+            if (node->getMeshId() != UINT32_MAX) {
+                Mesh& mesh = scene_resources.getMeshes()[node->getMeshId()];
+                for (Primitive& primitive : mesh.primitives) {
+                    uint32_t instance_index = static_cast<uint32_t>(gpu_instances.size());
+                    gpu_instances.push_back({ world_matrix, static_cast<uint32_t>(primitive.material_id) });
+
+                    draw_commands.push_back({
+                        .indexCount = primitive.index_count,
+                        .instanceCount = 1,
+                        .firstIndex = primitive.first_index,
+                        .vertexOffset = static_cast<int32_t>(primitive.vertex_start),
+                        .firstInstance = instance_index,
+                    });
+                }
+            }
+
+            for (uint32_t child_id = node->getFirstChildId(); child_id != UINT32_MAX; ) {
+                Node* child = scene_resources.getTree().getNode(child_id);
+                uint32_t next_sibling_id = child->getNextSiblingId();
+                node_stack.push_back({ child_id, world_matrix });
+                child_id = next_sibling_id;
+            }
+        }
+
+        size_t instance_buf_size = sizeof(gpu_instances[0]) * gpu_instances.size();
+        size_t draw_cmds_buf_size = sizeof(draw_commands[0]) * draw_commands.size();
+
+        Buffer instance_staging = createBuffer(VK_BUFFER_USAGE_TRANSFER_SRC_BIT, instance_buf_size, true, VMA_MEMORY_USAGE_AUTO_PREFER_HOST);
+        Buffer draw_cmds_staging = createBuffer(VK_BUFFER_USAGE_TRANSFER_SRC_BIT, draw_cmds_buf_size, true, VMA_MEMORY_USAGE_AUTO_PREFER_HOST);
+        instance_staging.map();
+        draw_cmds_staging.map();
+
+        memcpy(instance_staging.mapped, gpu_instances.data(), instance_buf_size);
+        memcpy(draw_cmds_staging.mapped, draw_commands.data(), draw_cmds_buf_size);
+
+        instance_staging.flush(instance_buf_size, 0);
+        instance_staging.unmap();
+        draw_cmds_staging.flush(draw_cmds_buf_size, 0);
+        draw_cmds_staging.unmap();
+
+        Buffer instance_buffer = createBuffer(VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, instance_buf_size, false, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE);
+        Buffer draw_cmds_buffer = createBuffer(VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT , draw_cmds_buf_size, false, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE);
+
+        copyBuffer(instance_staging, instance_buffer, instance_buf_size);
+        copyBuffer(draw_cmds_staging, draw_cmds_buffer, draw_cmds_buf_size);
     }
 
     void UpdateUniformBuffers(int frame_index) {
@@ -60,6 +123,7 @@ namespace Renderer {
         projection[1][1] *= -1;
         scene.mvp = projection * Orbit::GetViewMatrix();
         memcpy(scene.buffers[frame_index].mapped, &scene.mvp, sizeof(glm::mat4));
+        scene.buffers[frame_index].flush(sizeof(glm::mat4), 0);
     }
 
 	void Render() {
@@ -207,42 +271,7 @@ namespace Renderer {
 
             UpdateUniformBuffers(frame_index);
 
-            std::vector<Instance>& render_stack = scene_resources.getRenderStack(); 
-            render_stack.clear();
-            uint32_t node_id = scene_resources.getTree().m_root_node_id;
-            while (node_id != UINT32_MAX) {
-                Node* node = scene_resources.getTree().getNode(node_id);
-                render_stack.push_back({ node, node->getMatrix() });
-                node_id = node->getNextSiblingId();
-            };
-
-            while (!render_stack.empty()) {
-                Instance instance = render_stack.back();
-                render_stack.pop_back();
-                glm::mat4 world_matrix = instance.matrix;
-
-                if (instance.node->getMeshId() != UINT32_MAX) {
-                    PushConstants refs{
-                        .scene_ref = scene.buffers[frame_index].address,
-                        .vertex_ref = vertex_buffer->address,
-                        .model = world_matrix,
-                    };
-                    vkCmdPushConstants(command_buffer, vk_pipeline::g_pipeline_layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstants), &refs);
-
-                    Mesh& mesh = scene_resources.getMeshes()[instance.node->getMeshId()];
-                    for (Primitive& primitive : mesh.primitives) {
-                        vkCmdDrawIndexed(command_buffer, primitive.index_count, 1, primitive.first_index, primitive.vertex_start, 0);
-                    }
-                }
-
-                uint32_t child_node_id = instance.node->getFirstChildId();
-                while (child_node_id != UINT32_MAX) {
-                    Node* child = scene_resources.getTree().getNode(child_node_id);
-                    render_stack.push_back({ child, world_matrix * child->getMatrix() });
-                    child_node_id = child->getNextSiblingId();
-                }
-            }
-		}
+        }
 		vkCmdEndRendering(command_buffer);
 
 		VkImageMemoryBarrier2 present_barrier{

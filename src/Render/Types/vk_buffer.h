@@ -19,6 +19,7 @@ struct Buffer {
     void* mapped = nullptr;
 
     void map();
+    void flush(VkDeviceSize size, VkDeviceSize offset);
     void unmap();
 
 private:
