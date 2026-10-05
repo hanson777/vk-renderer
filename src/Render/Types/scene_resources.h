@@ -31,6 +31,8 @@ struct SceneResources {
     uint32_t m_vertex_buffer_id = UINT32_MAX;
     uint32_t m_index_buffer_id = UINT32_MAX;
     uint32_t m_material_buffer_id = UINT32_MAX;
+    uint32_t m_instance_buffer_id = UINT32_MAX;
+    uint32_t m_command_buffer_id = UINT32_MAX;
     uint32_t m_fallback_image_id = UINT32_MAX;
     uint32_t m_fallback_sampler_id = UINT32_MAX;
     uint32_t m_fallback_texture_id = UINT32_MAX;
@@ -60,6 +62,8 @@ struct SceneResources {
     uint32_t getVertexBufferId() { return m_vertex_buffer_id; }
     uint32_t getIndexBufferId() { return m_index_buffer_id; }
     uint32_t getMaterialBufferId() { return m_material_buffer_id; }
+    uint32_t getInstanceBufferId() { return m_instance_buffer_id; }
+    uint32_t getCommandBufferId() { return m_command_buffer_id; }
 
     uint32_t getFallbackImageId() { return m_fallback_image_id; }
     uint32_t getFallbackSamplerId() { return m_fallback_sampler_id; }
@@ -69,6 +73,8 @@ struct SceneResources {
     void setVertexBufferId(uint32_t id) { m_vertex_buffer_id = id; }
     void setIndexBufferId(uint32_t id) { m_index_buffer_id = id; }
     void setMaterialBufferId(uint32_t id) { m_material_buffer_id = id; }
+    void setInstanceBufferId(uint32_t id) { m_instance_buffer_id = id; }
+    void setCommandBufferId(uint32_t id) { m_command_buffer_id = id; }
 
     void setFallbackImageId(uint32_t id) { m_fallback_image_id = id; }
     void setFallbackSamplerId(uint32_t id) { m_fallback_sampler_id = id; }

@@ -31,6 +31,8 @@ namespace Renderer {
     SceneResources scene_resources;
     GltfLoader gltf_loader;
 
+    uint32_t draw_count = 0;
+
     void Shutdown() {
         vkDeviceWaitIdle(vk_device::GetDevice());
         for (Buffer& buffer : scene.buffers) {
@@ -46,9 +48,9 @@ namespace Renderer {
         // gltf_loader.loadGltf("/Users/hanson/Downloads/revolver_navy_colt_1851_silver/scene.gltf", scene_resources);
         gltf_loader.loadGltf("/Users/hanson/graphics/vk-renderer/res/MosquitoInAmber.glb", scene_resources);
         Node* root = scene_resources.getTree().getNode(scene_resources.getTree().m_root_node_id);
-        root->setTranslation(glm::vec3(0, 0, 0));
-        root->setRotation(glm::quat(1, 0, 0, 0));
-        root->setScale(glm::vec3(10, 10, 10));
+        root->setTranslation(glm::vec3(0.0f, 0.0f, 0.0f));
+        root->setRotation(glm::quat(1.0f, 0.0f, 0.0f, 0.0f));
+        root->setScale(glm::vec3(10.0f, 10.0f, 10.0f));
 
         for (uint32_t i = 0; i < scene.buffers.size(); i++) {
             scene.buffers[i] = createBuffer(VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, sizeof(glm::mat4), true, VMA_MEMORY_USAGE_AUTO);
@@ -95,6 +97,8 @@ namespace Renderer {
             }
         }
 
+        draw_count = draw_commands.size();
+
         size_t instance_buf_size = sizeof(gpu_instances[0]) * gpu_instances.size();
         size_t draw_cmds_buf_size = sizeof(draw_commands[0]) * draw_commands.size();
 
@@ -114,8 +118,11 @@ namespace Renderer {
         Buffer instance_buffer = createBuffer(VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, instance_buf_size, false, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE);
         Buffer draw_cmds_buffer = createBuffer(VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT , draw_cmds_buf_size, false, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE);
 
-        copyBuffer(instance_staging, instance_buffer, instance_buf_size);
-        copyBuffer(draw_cmds_staging, draw_cmds_buffer, draw_cmds_buf_size);
+        copyBuffer(instance_staging, instance_buffer, instance_buf_size, VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT, VK_ACCESS_2_SHADER_READ_BIT);
+        copyBuffer(draw_cmds_staging, draw_cmds_buffer, draw_cmds_buf_size, VK_PIPELINE_STAGE_2_DRAW_INDIRECT_BIT, VK_ACCESS_2_INDIRECT_COMMAND_READ_BIT);
+
+        scene_resources.setInstanceBufferId(scene_resources.addBuffer(std::move(instance_buffer))); 
+        scene_resources.setCommandBufferId(scene_resources.addBuffer(std::move(draw_cmds_buffer)));
     }
 
     void UpdateUniformBuffers(int frame_index) {
@@ -267,7 +274,18 @@ namespace Renderer {
             Buffer* vertex_buffer = scene_resources.getBuffer(scene_resources.getVertexBufferId()); 
             Buffer* index_buffer = scene_resources.getBuffer(scene_resources.getIndexBufferId()); 
 
+            PushConstants pc{
+                .scene_ref = scene.buffers[frame_index].address,
+                .vertex_ref = vertex_buffer->address,
+                .material_ref = scene_resources.getBuffer(scene_resources.getMaterialBufferId())->address,
+                .instance_ref = scene_resources.getBuffer(scene_resources.getInstanceBufferId())->address,
+            };
+            vkCmdPushConstants(command_buffer, vk_pipeline::g_pipeline_layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(PushConstants), &pc);
+
             vkCmdBindIndexBuffer(command_buffer, index_buffer->buffer, 0, VK_INDEX_TYPE_UINT32);
+
+            VkBuffer draw_cmds = scene_resources.getBuffer(scene_resources.getCommandBufferId())->buffer;
+            vkCmdDrawIndexedIndirect(command_buffer, draw_cmds, 0, draw_count, sizeof(VkDrawIndexedIndirectCommand));
 
             UpdateUniformBuffers(frame_index);
 

@@ -355,7 +355,7 @@ std::vector<uint32_t> GltfLoader::loadMaterials(const tg3_model& model, const st
     mat_staging.unmap();
 
     Buffer mat_buffer = createBuffer(VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, mats_size, false, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE);
-    copyBuffer(mat_staging, mat_buffer, mats_size);
+    copyBuffer(mat_staging, mat_buffer, mats_size, VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT, VK_ACCESS_2_SHADER_READ_BIT);
 
     uint32_t mat_buffer_id = scene_resources.addBuffer(std::move(mat_buffer));
     scene_resources.setMaterialBufferId(mat_buffer_id);
@@ -490,8 +490,8 @@ std::vector<uint32_t> GltfLoader::loadMeshes(const tg3_model& model, const std::
     Buffer vertex_buffer = createBuffer(VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, verts_size, false, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE);
     Buffer index_buffer = createBuffer(VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, indices_size, false, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE);
     
-    copyBuffer(vertex_staging, vertex_buffer, verts_size);
-    copyBuffer(index_staging, index_buffer, indices_size);
+    copyBuffer(vertex_staging, vertex_buffer, verts_size, VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT, VK_ACCESS_2_SHADER_READ_BIT);
+    copyBuffer(index_staging, index_buffer, indices_size, VK_PIPELINE_STAGE_2_INDEX_INPUT_BIT, VK_ACCESS_2_INDEX_READ_BIT);
 
     uint32_t vert_id = scene_resources.addBuffer(std::move(vertex_buffer));
     uint32_t index_id = scene_resources.addBuffer(std::move(index_buffer));

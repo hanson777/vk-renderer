@@ -127,12 +127,28 @@ void flushCommandBuffer(VkCommandBuffer cmd_buffer, VkQueue queue, VkCommandPool
     }
 }
 
-void copyBuffer(Buffer& src, Buffer& dst, VkDeviceSize size) {
+void copyBuffer(Buffer& src, Buffer& dst, VkDeviceSize size, VkPipelineStageFlags2 dst_stage, VkAccessFlags2 dst_access) {
     VkCommandPool cmd_pool = createCommandPool(vk_device::GetQueueIndex(), VK_COMMAND_POOL_CREATE_TRANSIENT_BIT);
     VkCommandBuffer cmd_buffer = createCommandBuffer(cmd_pool, VK_COMMAND_BUFFER_LEVEL_PRIMARY, true);
 
     VkBufferCopy copy_region{ .size = size };
     vkCmdCopyBuffer(cmd_buffer, src.buffer, dst.buffer, 1, &copy_region);
+
+    VkMemoryBarrier2 barrier{
+        .sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER_2,
+        .srcStageMask = VK_PIPELINE_STAGE_2_COPY_BIT,
+        .srcAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT,
+        .dstStageMask = dst_stage,
+        .dstAccessMask = dst_access,
+    };
+
+    VkDependencyInfo dependency_info{
+        .sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO,
+        .memoryBarrierCount = 1,
+        .pMemoryBarriers = &barrier,
+    };
+
+    vkCmdPipelineBarrier2(cmd_buffer, &dependency_info);
 
     flushCommandBuffer(cmd_buffer, vk_device::GetQueue(), cmd_pool, true);
 

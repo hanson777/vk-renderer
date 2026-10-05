@@ -51,12 +51,12 @@ struct PushConstants
 ConstantBuffer<PushConstants> pc;
 
 [shader("vertex")]
-VertexOutput vertMain(uint vid : SV_VulkanVertexID)
+VertexOutput vertMain(uint vertex_id : SV_VulkanVertexID, uint instance_id : SV_VulkanInstanceID)
 {
-    Vertex vert = pc.vertices[vid];
+    Vertex vert = pc.vertices[vertex_id];
 
     VertexOutput output;
-    output.sv_position = mul(pc.scene_ref.mvp, mul(pc.model, float4(vert.position, 1.0)));
+    output.sv_position = mul(pc.scene_ref.mvp, mul(pc.instance_ref.instances[instance_id].world_matrix, float4(vert.position, 1.0)));
     output.color = (vert.position + 1.0f) / 2.0f;
 
     return output;
