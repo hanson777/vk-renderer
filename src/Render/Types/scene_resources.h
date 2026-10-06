@@ -7,6 +7,7 @@
 #include "Render/Types/Material.h"
 #include "Render/Types/Mesh.h"
 #include "Render/Types/vk_buffer.h"
+#include "Render/Types/vk_descriptors.h"
 #include <glm/glm.hpp>
 #include <cstdint>
 #include <vector>
@@ -38,8 +39,14 @@ struct SceneResources {
     uint32_t m_fallback_texture_id = UINT32_MAX;
     uint32_t m_fallback_material_id = UINT32_MAX;
 
+    SceneDescriptors m_scene_descriptors;
+
     public:
     void shutdown();
+    void prepareDescriptors(VkDescriptorSetLayout layout, uint32_t capacity);
+    // GPU work using this scene must have finished before destruction.
+    void destroyDescriptors();
+    VkDescriptorSet getTextureDescriptorSet() const { return m_scene_descriptors.textures; }
 
     Tree& getTree() { return tree; }
 

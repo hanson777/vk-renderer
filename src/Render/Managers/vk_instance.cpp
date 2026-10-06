@@ -42,9 +42,9 @@ namespace vk_instance {
         std::vector<const char*> layers;
         if (g_validation_enabled) {
             uint32_t layer_count;
-            vkEnumerateInstanceLayerProperties(&layer_count, nullptr);
+            VK_CHECK(vkEnumerateInstanceLayerProperties(&layer_count, nullptr));
             std::vector<VkLayerProperties> available_layers(layer_count);
-            vkEnumerateInstanceLayerProperties(&layer_count, available_layers.data()); 
+            VK_CHECK(vkEnumerateInstanceLayerProperties(&layer_count, available_layers.data()));
             
             bool found = false;
             for (const auto& layer : available_layers) {
@@ -58,6 +58,7 @@ namespace vk_instance {
             if (!found) {
                 std::cerr << "[ERROR::INSTANCE_MANAGER] validation layers requested but none found\n";
                 g_validation_enabled = false;
+                return false;
             }
         }
 
@@ -68,7 +69,8 @@ namespace vk_instance {
                                VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
                                VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT,
             .messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
-                           VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT,
+                           VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT |
+                           VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT,
             .pfnUserCallback = debugCallback,
         };
 
@@ -95,7 +97,9 @@ namespace vk_instance {
 
 		volkLoadInstance(g_instance);
 
-        VK_CHECK(vkCreateDebugUtilsMessengerEXT(g_instance, &debug_create_info, nullptr, &g_debug_messenger));
+        if (g_validation_enabled) {
+            VK_CHECK(vkCreateDebugUtilsMessengerEXT(g_instance, &debug_create_info, nullptr, &g_debug_messenger));
+        }
         
         VK_CHECK(glfwCreateWindowSurface(g_instance, Window::GetHandle(), nullptr, &g_surface));
 

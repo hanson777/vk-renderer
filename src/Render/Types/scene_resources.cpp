@@ -5,9 +5,39 @@
 #include <iostream>
 
 void SceneResources::shutdown() {
+    destroyDescriptors();
     destroyBuffers();
     destroyImages();
     destroySamplers();
+}
+
+void SceneResources::prepareDescriptors(VkDescriptorSetLayout layout, uint32_t capacity) {
+    std::vector<VkDescriptorImageInfo> image_infos;
+
+    const VkDescriptorImageInfo fallback_info = image_infos[m_fallback_texture_id];
+    image_infos.resize(capacity, fallback_info);
+
+    for (int i = 0; i < m_textures.size(); i++) {
+        image_infos[i] = VkDescriptorImageInfo{
+            .sampler = m_samplers[m_textures[i].sampler_id],
+            .imageView = m_images[m_textures[i].image_id].image_view,
+            .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+        };
+    }
+
+    m_scene_descriptors.pool = createDescriptorPool(VkDescriptorPoolSize{
+        .type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+        .descriptorCount = capacity,
+    });
+    m_scene_descriptors.textures = allocateDescriptorSet(m_scene_descriptors.pool, layout);
+    writeTextureDescriptors(m_scene_descriptors.textures, image_infos);
+}
+
+void SceneResources::destroyDescriptors() {
+    if (m_scene_descriptors.pool != VK_NULL_HANDLE) {
+        vkDestroyDescriptorPool(vk_device::GetDevice(), m_scene_descriptors.pool, nullptr);
+        m_scene_descriptors = {};
+    }
 }
 
 uint32_t SceneResources::addBuffer(Buffer buffer) {

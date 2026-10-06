@@ -43,14 +43,16 @@ namespace Renderer {
         scene_resources.shutdown();
     }
 
-    void PrepareUniformBuffers() {
+    void PrepareSceneResources() {
         // gltf_loader.loadGltf("/Users/hanson/graphics/vk-renderer/res/ABeautifulGame.glb", scene_resources);
         // gltf_loader.loadGltf("/Users/hanson/Downloads/revolver_navy_colt_1851_silver/scene.gltf", scene_resources);
-        gltf_loader.loadGltf("/Users/hanson/graphics/vk-renderer/res/MosquitoInAmber.glb", scene_resources);
+        // gltf_loader.loadGltf("/Users/hanson/graphics/vk-renderer/res/MosquitoInAmber.glb", scene_resources);
+        gltf_loader.loadGltf("/Users/hanson/graphics/vk-renderer/res/DamagedHelmet.glb", scene_resources);
+        scene_resources.prepareDescriptors(vk_pipeline::g_texture_set_layout, vk_pipeline::g_texture_capacity);
         Node* root = scene_resources.getTree().getNode(scene_resources.getTree().m_root_node_id);
         root->setTranslation(glm::vec3(0.0f, 0.0f, 0.0f));
         root->setRotation(glm::quat(1.0f, 0.0f, 0.0f, 0.0f));
-        root->setScale(glm::vec3(10.0f, 10.0f, 10.0f));
+        root->setScale(glm::vec3(1.0f));
 
         for (uint32_t i = 0; i < scene.buffers.size(); i++) {
             scene.buffers[i] = createBuffer(VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, sizeof(glm::mat4), true, VMA_MEMORY_USAGE_AUTO);

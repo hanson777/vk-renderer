@@ -24,7 +24,7 @@ int main() {
         return -1;
     }
 
-    Renderer::PrepareUniformBuffers();
+    Renderer::PrepareSceneResources();
 
     while (!Window::ShouldClose()) {
         Window::BeginFrame();

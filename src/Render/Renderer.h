@@ -7,6 +7,6 @@ namespace Renderer {
 
 	void Render();
     void Shutdown();
-    void PrepareUniformBuffers();
+    void PrepareSceneResources();
 	void LoadShader(const std::string& filepath, const std::string& entry_point, const ShaderStage stage);
 }

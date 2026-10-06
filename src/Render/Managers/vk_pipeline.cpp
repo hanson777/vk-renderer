@@ -4,7 +4,9 @@
 #include "Render/Managers/vk_swapchain.h"
 #include "Render/Types/Shader.h"
 #include "Render/Types/push_constants.h"
+#include "Render/Types/vk_descriptors.h"
 #include <vector>
+#include <algorithm>
 #include <cstdint>
 #include <glm/glm.hpp>
 
@@ -12,6 +14,9 @@ namespace vk_pipeline {
 	
 	VkPipelineLayout g_pipeline_layout = VK_NULL_HANDLE;
 	VkPipeline g_pipeline = VK_NULL_HANDLE;
+    VkDescriptorSetLayout g_texture_set_layout = VK_NULL_HANDLE;
+    uint32_t g_texture_capacity = 0;
+
 	std::vector<Shader> g_shaders;
 	std::vector<VkPipelineShaderStageCreateInfo> g_shader_stage_create_infos;
 
@@ -22,9 +27,23 @@ namespace vk_pipeline {
 			.size = sizeof(PushConstants),
 		};
 
+        VkPhysicalDeviceProperties properties{};
+        vkGetPhysicalDeviceProperties(vk_device::GetPhysicalDevice(), &properties);
+        const auto& limits = properties.limits;
+        g_texture_capacity = std::min({
+            256u,
+            limits.maxPerStageDescriptorSamplers,
+            limits.maxPerStageDescriptorSampledImages,
+            limits.maxDescriptorSetSamplers,
+            limits.maxDescriptorSetSampledImages,
+            limits.maxPerStageResources,
+        });
+        g_texture_set_layout = createTextureSetLayout(g_texture_capacity);
+
 		VkPipelineLayoutCreateInfo pipeline_layout_create_info{
 			.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-			.setLayoutCount = 0,
+			.setLayoutCount = 1,
+            .pSetLayouts = &g_texture_set_layout,
 			.pushConstantRangeCount = 1,
 			.pPushConstantRanges = &range,
 		};
@@ -131,11 +150,18 @@ namespace vk_pipeline {
 		const VkDevice& device = vk_device::GetDevice();
 		if (g_pipeline_layout != VK_NULL_HANDLE) {
 			vkDestroyPipelineLayout(device, g_pipeline_layout, nullptr);
+            g_pipeline_layout = VK_NULL_HANDLE;
 		}
 
 		if (g_pipeline != VK_NULL_HANDLE) {
 			vkDestroyPipeline(device, g_pipeline, nullptr);
+            g_pipeline = VK_NULL_HANDLE;
 		}
+
+        if (g_texture_set_layout != VK_NULL_HANDLE) {
+            vkDestroyDescriptorSetLayout(device, g_texture_set_layout, nullptr);
+            g_texture_set_layout = VK_NULL_HANDLE;
+        }
 	}
 
 	void AddShader(const std::string& filepath, const std::string& entry_point, const ShaderStage stage) {

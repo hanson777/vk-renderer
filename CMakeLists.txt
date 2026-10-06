@@ -89,6 +89,7 @@ add_executable(${PROJECT_NAME}
     src/Render/Types/Tree.cpp
     src/Render/Types/Node.cpp
     src/Render/Types/vk_image.cpp
+    src/Render/Types/vk_descriptors.cpp
     src/Render/Renderer.cpp
 )
 

@@ -9,6 +9,8 @@ namespace vk_pipeline {
 
 	extern VkPipelineLayout g_pipeline_layout;
 	extern VkPipeline g_pipeline;
+    extern VkDescriptorSetLayout g_texture_set_layout;
+    extern uint32_t g_texture_capacity;
 
 	bool Init();
 	void Shutdown();
