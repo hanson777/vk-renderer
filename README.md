@@ -2,6 +2,10 @@
 
 A Vulkan renderer written in C++20, focused on modern rendering techniques including dynamic rendering, multi-draw indirect (MDI), and bindless textures. It currently loads glTF models and renders their base color textures and material color factors, without lighting.
 
+The renderer uses an orbit camera to inspect the model. **Hold the left mouse button and drag** to orbit, use the **scroll wheel** to zoom in and out, and press **Esc** to exit.
+
+## Screenshots
+
 ![Damaged Helmet rendered with base color textures](readme-res/damaged-helmet.png)
 
 ![Teacup rendered with base color textures](readme-res/teacup.png)
