@@ -44,14 +44,13 @@ namespace Renderer {
     }
 
     void PrepareSceneResources() {
-        gltf_loader.loadGltf("res/ABeautifulGame.glb", scene_resources);
-        // gltf_loader.loadGltf("res/revolver_navy_colt_1851_silver/scene.gltf", scene_resources);
-        // gltf_loader.loadGltf("res/DamagedHelmet.glb", scene_resources);
+        // gltf_loader.loadGltf("res/Teacup.glb", scene_resources);
+        gltf_loader.loadGltf("res/DamagedHelmet.glb", scene_resources);
         scene_resources.prepareDescriptors(vk_pipeline::g_texture_set_layout, vk_pipeline::g_texture_capacity);
         Node* root = scene_resources.getTree().getNode(scene_resources.getTree().m_root_node_id);
         root->setTranslation(glm::vec3(0.0f, 0.0f, 0.0f));
         root->setRotation(glm::quat(1.0f, 0.0f, 0.0f, 0.0f));
-        root->setScale(glm::vec3(3.0f));
+        root->setScale(glm::vec3(10.0f));
 
         for (uint32_t i = 0; i < scene.buffers.size(); i++) {
             scene.buffers[i] = createBuffer(VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, sizeof(glm::mat4), true, VMA_MEMORY_USAGE_AUTO);
