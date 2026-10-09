@@ -116,12 +116,17 @@ std::vector<ImageData> GltfLoader::loadImageData(const tg3_model& model, SceneRe
     std::vector<uint8_t>& image_buffer = scene_resources.getImageBuffer();
     
     for (int i = 0; i < model.images_count; i++) {
-        const tg3_str& uri = model.images[i].uri;
-        std::string image_path(uri.data, uri.len);
-        int width, height, channels;
-        uint8_t* data = stbi_load(image_path.c_str(), &width, &height, &channels, 4);
+        const tg3_image& image = model.images[i];
+        int width = 0, height = 0, channels = 0;
+        uint8_t* data = nullptr;
+        if (image.buffer_view >= 0) {
+            data = decodeEmbeddedImage(model, image, width, height);
+        } else if (image.uri.data != nullptr && image.uri.len > 0) {
+            std::string image_path(image.uri.data, image.uri.len);
+            data = stbi_load(image_path.c_str(), &width, &height, &channels, 4);
+        }
         if (data == nullptr) {
-            std::cerr << "[ERROR::loadImageData] failed to load image at path: " << image_path.c_str() << ", using white pixel\n";
+            std::cerr << "[ERROR::loadImageData] failed to load image " << i << ", using white pixel\n";
             uint8_t white_pixel_data[4] = { 255, 255, 255, 255 };
             size_t offset = image_buffer.size();
             image_buffer.insert(image_buffer.end(), white_pixel_data, white_pixel_data + 4);
@@ -136,7 +141,7 @@ std::vector<ImageData> GltfLoader::loadImageData(const tg3_model& model, SceneRe
             continue;
         }
 
-        size_t size = width * height * 4;
+        size_t size = static_cast<size_t>(width) * static_cast<size_t>(height) * 4;
         size_t offset = image_buffer.size();
         image_buffer.insert(image_buffer.end(), data, data + size);
 

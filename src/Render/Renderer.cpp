@@ -44,15 +44,14 @@ namespace Renderer {
     }
 
     void PrepareSceneResources() {
-        // gltf_loader.loadGltf("/Users/hanson/graphics/vk-renderer/res/ABeautifulGame.glb", scene_resources);
-        // gltf_loader.loadGltf("/Users/hanson/Downloads/revolver_navy_colt_1851_silver/scene.gltf", scene_resources);
-        // gltf_loader.loadGltf("/Users/hanson/graphics/vk-renderer/res/MosquitoInAmber.glb", scene_resources);
-        gltf_loader.loadGltf("/Users/hanson/graphics/vk-renderer/res/DamagedHelmet.glb", scene_resources);
+        gltf_loader.loadGltf("res/ABeautifulGame.glb", scene_resources);
+        // gltf_loader.loadGltf("res/revolver_navy_colt_1851_silver/scene.gltf", scene_resources);
+        // gltf_loader.loadGltf("res/DamagedHelmet.glb", scene_resources);
         scene_resources.prepareDescriptors(vk_pipeline::g_texture_set_layout, vk_pipeline::g_texture_capacity);
         Node* root = scene_resources.getTree().getNode(scene_resources.getTree().m_root_node_id);
         root->setTranslation(glm::vec3(0.0f, 0.0f, 0.0f));
         root->setRotation(glm::quat(1.0f, 0.0f, 0.0f, 0.0f));
-        root->setScale(glm::vec3(1.0f));
+        root->setScale(glm::vec3(3.0f));
 
         for (uint32_t i = 0; i < scene.buffers.size(); i++) {
             scene.buffers[i] = createBuffer(VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, sizeof(glm::mat4), true, VMA_MEMORY_USAGE_AUTO);
@@ -200,15 +199,15 @@ namespace Renderer {
 					.layerCount = 1,
 				},
 			},
-			// depth image
+			// Wait for the previous frame before reusing the shared depth image.
 			VkImageMemoryBarrier2{
 				.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
-				.srcStageMask = VK_PIPELINE_STAGE_2_NONE,
-				.srcAccessMask = VK_ACCESS_2_NONE,
+				.srcStageMask = VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT,
+				.srcAccessMask = VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
 				.dstStageMask = VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_2_LATE_FRAGMENT_TESTS_BIT,
 				.dstAccessMask = VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_2_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
 				.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
-				.newLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL,
+				.newLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
 				.image = vk_swapchain::g_depth_image,
 				.subresourceRange{
 					.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT,
@@ -262,6 +261,8 @@ namespace Renderer {
 				.y = 0,
 				.width = static_cast<float>(vk_swapchain::g_swapchain_extent.width),
 				.height = static_cast<float>(vk_swapchain::g_swapchain_extent.height),
+				.minDepth = 0.0f,
+				.maxDepth = 1.0f,
 			};
 			vkCmdSetViewport(command_buffer, 0, 1, &viewport);
 
@@ -272,6 +273,9 @@ namespace Renderer {
 			vkCmdSetScissor(command_buffer, 0, 1, &scissor);
 
 			vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vk_pipeline::g_pipeline);
+
+            VkDescriptorSet textures = scene_resources.getTextureDescriptorSet();
+            vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vk_pipeline::g_pipeline_layout, 0, 1, &textures, 0, nullptr);
 
             Buffer* vertex_buffer = scene_resources.getBuffer(scene_resources.getVertexBufferId()); 
             Buffer* index_buffer = scene_resources.getBuffer(scene_resources.getIndexBufferId()); 

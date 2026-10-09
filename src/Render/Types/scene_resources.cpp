@@ -1,8 +1,34 @@
 #include "scene_resources.h"
 #include "Render/Managers/vk_device.h"
 #include "Render/Managers/vk_memory.h"
+#include <tiny_gltf_v3.h>
+#include <stb_image.h>
+#include <climits>
 #include <vector>
 #include <iostream>
+
+uint8_t* decodeEmbeddedImage(const tg3_model& model, const tg3_image& image, int& width, int& height) {
+    if (image.buffer_view < 0 || static_cast<uint32_t>(image.buffer_view) >= model.buffer_views_count) {
+        return nullptr;
+    }
+
+    const tg3_buffer_view& buffer_view = model.buffer_views[image.buffer_view];
+    if (buffer_view.buffer < 0 || static_cast<uint32_t>(buffer_view.buffer) >= model.buffers_count) {
+        return nullptr;
+    }
+
+    const tg3_span_u8& buffer_data = model.buffers[buffer_view.buffer].data;
+    if (buffer_data.data == nullptr || buffer_view.byte_offset > buffer_data.count ||
+        buffer_view.byte_length > buffer_data.count - buffer_view.byte_offset ||
+        buffer_view.byte_length == 0 || buffer_view.byte_length > INT_MAX) {
+        return nullptr;
+    }
+
+    int channels;
+    return stbi_load_from_memory(buffer_data.data + buffer_view.byte_offset,
+                                static_cast<int>(buffer_view.byte_length),
+                                &width, &height, &channels, STBI_rgb_alpha);
+}
 
 void SceneResources::shutdown() {
     destroyDescriptors();
@@ -14,7 +40,12 @@ void SceneResources::shutdown() {
 void SceneResources::prepareDescriptors(VkDescriptorSetLayout layout, uint32_t capacity) {
     std::vector<VkDescriptorImageInfo> image_infos;
 
-    const VkDescriptorImageInfo fallback_info = image_infos[m_fallback_texture_id];
+    const Texture& fallback_texture = m_textures[m_fallback_texture_id];
+    const VkDescriptorImageInfo fallback_info{
+        .sampler = m_samplers[fallback_texture.sampler_id],
+        .imageView = m_images[fallback_texture.image_id].image_view,
+        .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+    };
     image_infos.resize(capacity, fallback_info);
 
     for (int i = 0; i < m_textures.size(); i++) {

@@ -12,6 +12,12 @@
 #include <cstdint>
 #include <vector>
 
+struct tg3_model;
+struct tg3_image;
+
+// Returns RGBA pixels owned by the caller; release with stbi_image_free().
+uint8_t* decodeEmbeddedImage(const tg3_model& model, const tg3_image& image, int& width, int& height);
+
 struct GpuInstance {
     glm::mat4 model;
     uint32_t material_index;
@@ -44,7 +50,6 @@ struct SceneResources {
     public:
     void shutdown();
     void prepareDescriptors(VkDescriptorSetLayout layout, uint32_t capacity);
-    // GPU work using this scene must have finished before destruction.
     void destroyDescriptors();
     VkDescriptorSet getTextureDescriptorSet() const { return m_scene_descriptors.textures; }
 
