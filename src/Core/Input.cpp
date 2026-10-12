@@ -37,8 +37,8 @@ namespace Input {
             g_current_position = { x_pos, y_pos };
             g_first_mouse = false;
         }
-        g_mouse_delta.x += x_pos - g_last_position.x;
-        g_mouse_delta.y += g_last_position.y - y_pos;
+        g_mouse_delta.x += x_pos - g_current_position.x;
+        g_mouse_delta.y += g_current_position.y - y_pos;
         g_current_position = { x_pos, y_pos };
         g_mouse_moving = true;
     }

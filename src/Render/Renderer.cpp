@@ -10,7 +10,7 @@
 #include "Render/Types/scene_resources.h"
 #include "Render/Types/gltf_loader.h"
 #include "Render/Types/push_constants.h"
-#include "Camera/Orbit.h"
+#include "Camera/first_person.h"
 #include "Core/Window.h"
 #include <glm/glm.hpp>
 #include <glm/ext/matrix_clip_space.hpp>
@@ -46,7 +46,8 @@ namespace Renderer {
     void PrepareSceneResources() {
         // gltf_loader.loadGltf("res/Teacup.glb", scene_resources);
         gltf_loader.loadGltf("res/DamagedHelmet.glb", scene_resources);
-        scene_resources.prepareDescriptors(vk_pipeline::g_texture_set_layout, vk_pipeline::g_texture_capacity);
+        // gltf_loader.loadGltf("res/Bistro.glb", scene_resources);
+        scene_resources.prepareDescriptors(vk_pipeline::g_texture_set_layout, vk_pipeline::g_texture_capacity, vk_pipeline::g_sampler_capacity);
         Node* root = scene_resources.getTree().getNode(scene_resources.getTree().m_root_node_id);
         root->setTranslation(glm::vec3(0.0f, 0.0f, 0.0f));
         root->setRotation(glm::quat(1.0f, 0.0f, 0.0f, 0.0f));
@@ -125,15 +126,15 @@ namespace Renderer {
         scene_resources.setCommandBufferId(scene_resources.addBuffer(std::move(draw_cmds_buffer)));
     }
 
-    void UpdateUniformBuffers(int frame_index) {
-        glm::mat4 projection = glm::perspective(glm::radians(Orbit::g_fov), (float)Window::GetWidth() / Window::GetHeight(), 0.1f, 100.0f);
+    void UpdateUniformBuffers(int frame_index, const FpsCamera& camera) {
+        glm::mat4 projection = glm::perspective(glm::radians(camera.getFov()), (float)Window::GetWidth() / Window::GetHeight(), 0.1f, 100.0f);
         projection[1][1] *= -1;
-        scene.mvp = projection * Orbit::GetViewMatrix();
+        scene.mvp = projection * camera.getViewMatrix();
         memcpy(scene.buffers[frame_index].mapped, &scene.mvp, sizeof(glm::mat4));
         scene.buffers[frame_index].flush(sizeof(glm::mat4), 0);
     }
 
-	void Render() {
+	void Render(const FpsCamera& camera) {
 		const VkDevice& device = vk_device::GetDevice();
 
 		if (vk_swapchain::g_recreate_swapchain) {
@@ -292,7 +293,7 @@ namespace Renderer {
             VkBuffer draw_cmds = scene_resources.getBuffer(scene_resources.getCommandBufferId())->buffer;
             vkCmdDrawIndexedIndirect(command_buffer, draw_cmds, 0, draw_count, sizeof(VkDrawIndexedIndirectCommand));
 
-            UpdateUniformBuffers(frame_index);
+            UpdateUniformBuffers(frame_index, camera);
 
         }
 		vkCmdEndRendering(command_buffer);

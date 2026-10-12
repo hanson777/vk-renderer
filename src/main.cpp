@@ -3,7 +3,7 @@
 #include "Render/Types/Shader.h"
 #include "Render/Renderer.h"
 #include "Core/Input.h"
-#include "Camera/Orbit.h"
+#include "Camera/first_person.h"
 #include "Application/Application.h"
 #include <iostream>
 
@@ -26,10 +26,17 @@ int main() {
 
     Renderer::PrepareSceneResources();
 
+    FpsCamera camera(glm::vec3(0.0f, 0.0f, 30.0f));
+    double last_frame = glfwGetTime();
+
     while (!Window::ShouldClose()) {
         Window::BeginFrame();
-        Orbit::Update();
-        Renderer::Render();
+        double current_frame = glfwGetTime();
+        float delta_time = static_cast<float>(current_frame - last_frame);
+        last_frame = current_frame;
+
+        camera.update(delta_time);
+        Renderer::Render(camera);
         Input::Update();
     }
 

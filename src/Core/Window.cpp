@@ -40,6 +40,7 @@ namespace Window {
         g_height = static_cast<uint32_t>(actual_height);
  
         glfwSwapInterval(1);
+        glfwSetInputMode(g_handle, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
         
         return true;
 	}

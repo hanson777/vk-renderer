@@ -75,6 +75,7 @@ add_executable(${PROJECT_NAME}
     src/Application/Application.cpp
     src/Camera/Arcball.cpp
     src/Camera/Orbit.cpp
+    src/Camera/first_person.cpp
     src/Render/vk_context.cpp
     src/Render/Managers/vk_instance.cpp
     src/Render/Managers/vk_device.cpp
