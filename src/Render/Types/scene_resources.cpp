@@ -37,31 +37,66 @@ void SceneResources::shutdown() {
     destroySamplers();
 }
 
-void SceneResources::prepareDescriptors(VkDescriptorSetLayout layout, uint32_t capacity) {
+bool SceneResources::prepareDescriptors(VkDescriptorSetLayout layout, uint32_t image_capacity, uint32_t sampler_capacity) {
+    // Populate once before rendering; never overwrite a set that may be in flight.
+    if (m_scene_descriptors.pool != VK_NULL_HANDLE) {
+        std::cerr << "[ERROR::prepareDescriptors] scene descriptors already prepared\n";
+        return false;
+    }
+    // Image slots follow texture IDs, including textures that share the same image.
+    if (!checkDescriptorCounts(m_textures.size(), m_samplers.size(), image_capacity, sampler_capacity)) return false;
+    if (m_fallback_texture_id >= m_textures.size()) {
+        std::cerr << "[ERROR::prepareDescriptors] missing fallback texture\n";
+        return false;
+    }
+    for (const Texture& texture : m_textures) {
+        if (texture.image_id >= m_images.size() || texture.sampler_id >= m_samplers.size()) {
+            std::cerr << "[ERROR::prepareDescriptors] texture references an invalid image or sampler\n";
+            return false;
+        }
+    }
+    for (const Material& material : m_materials) {
+        if (material.texture_index >= m_textures.size() || material.sampler_index >= m_samplers.size()) {
+            std::cerr << "[ERROR::prepareDescriptors] material references an invalid texture or sampler\n";
+            return false;
+        }
+    }
+
     std::vector<VkDescriptorImageInfo> image_infos;
+    std::vector<VkDescriptorImageInfo> sampler_infos;
 
     const Texture& fallback_texture = m_textures[m_fallback_texture_id];
     const VkDescriptorImageInfo fallback_info{
-        .sampler = m_samplers[fallback_texture.sampler_id],
         .imageView = m_images[fallback_texture.image_id].image_view,
         .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
     };
-    image_infos.resize(capacity, fallback_info);
+    image_infos.resize(image_capacity, fallback_info);
 
-    for (int i = 0; i < m_textures.size(); i++) {
+    const VkDescriptorImageInfo fallback_sampler_info{
+        .sampler = m_samplers[fallback_texture.sampler_id],
+    };
+    sampler_infos.resize(sampler_capacity, fallback_sampler_info);
+
+    for (size_t i = 0; i < m_textures.size(); i++) {
         image_infos[i] = VkDescriptorImageInfo{
-            .sampler = m_samplers[m_textures[i].sampler_id],
             .imageView = m_images[m_textures[i].image_id].image_view,
             .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
         };
     }
 
-    m_scene_descriptors.pool = createDescriptorPool(VkDescriptorPoolSize{
-        .type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-        .descriptorCount = capacity,
-    });
+    for (size_t i = 0; i < m_samplers.size(); i++) {
+        sampler_infos[i] = VkDescriptorImageInfo{
+            .sampler = m_samplers[i],
+        };
+    }
+
+    m_scene_descriptors.pool = createDescriptorPool(image_capacity, sampler_capacity);
     m_scene_descriptors.textures = allocateDescriptorSet(m_scene_descriptors.pool, layout);
     writeTextureDescriptors(m_scene_descriptors.textures, image_infos);
+    writeSamplerDescriptors(m_scene_descriptors.textures, sampler_infos);
+    std::cout << "[INFO::SCENE_DESCRIPTORS] populated " << m_textures.size() << '/' << image_capacity
+              << " images, " << m_samplers.size() << '/' << sampler_capacity << " samplers; unused slots use fallbacks\n";
+    return true;
 }
 
 void SceneResources::destroyDescriptors() {

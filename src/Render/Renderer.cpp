@@ -34,8 +34,9 @@ namespace Renderer {
     uint32_t draw_count = 0;
 
     void Shutdown() {
-        vkDeviceWaitIdle(vk_device::GetDevice());
+        VK_CHECK(vkDeviceWaitIdle(vk_device::GetDevice()));
         for (Buffer& buffer : scene.buffers) {
+            if (buffer.buffer == VK_NULL_HANDLE) continue;
             buffer.flush(sizeof(glm::mat4), 0);
             buffer.unmap();
             buffer = {};
@@ -43,15 +44,14 @@ namespace Renderer {
         scene_resources.shutdown();
     }
 
-    void PrepareSceneResources() {
-        // gltf_loader.loadGltf("res/Teacup.glb", scene_resources);
-        gltf_loader.loadGltf("res/DamagedHelmet.glb", scene_resources);
-        // gltf_loader.loadGltf("res/Bistro.glb", scene_resources);
-        scene_resources.prepareDescriptors(vk_pipeline::g_texture_set_layout, vk_pipeline::g_texture_capacity, vk_pipeline::g_sampler_capacity);
+    bool PrepareSceneResources(const std::string& filename) {
+        if (!gltf_loader.loadGltf(filename, scene_resources, vk_pipeline::g_texture_capacity, vk_pipeline::g_sampler_capacity)) return false;
+        if (!scene_resources.prepareDescriptors(vk_pipeline::g_texture_set_layout, vk_pipeline::g_texture_capacity, vk_pipeline::g_sampler_capacity)) return false;
+
         Node* root = scene_resources.getTree().getNode(scene_resources.getTree().m_root_node_id);
         root->setTranslation(glm::vec3(0.0f, 0.0f, 0.0f));
         root->setRotation(glm::quat(1.0f, 0.0f, 0.0f, 0.0f));
-        root->setScale(glm::vec3(10.0f));
+        root->setScale(glm::vec3(3.0f));
 
         for (uint32_t i = 0; i < scene.buffers.size(); i++) {
             scene.buffers[i] = createBuffer(VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, sizeof(glm::mat4), true, VMA_MEMORY_USAGE_AUTO);
@@ -124,10 +124,11 @@ namespace Renderer {
 
         scene_resources.setInstanceBufferId(scene_resources.addBuffer(std::move(instance_buffer))); 
         scene_resources.setCommandBufferId(scene_resources.addBuffer(std::move(draw_cmds_buffer)));
+        return true;
     }
 
     void UpdateUniformBuffers(int frame_index, const FpsCamera& camera) {
-        glm::mat4 projection = glm::perspective(glm::radians(camera.getFov()), (float)Window::GetWidth() / Window::GetHeight(), 0.1f, 100.0f);
+        glm::mat4 projection = glm::perspective(glm::radians(camera.getFov()), (float)Window::GetWidth() / Window::GetHeight(), 0.1f, 1000.0f);
         projection[1][1] *= -1;
         scene.mvp = projection * camera.getViewMatrix();
         memcpy(scene.buffers[frame_index].mapped, &scene.mvp, sizeof(glm::mat4));
@@ -154,7 +155,7 @@ namespace Renderer {
 			.pSemaphores = &vk_sync::g_timeline_semaphore,
 			.pValues = &wait_value,
 		};
-		vkWaitSemaphores(device, &wait_info, UINT64_MAX);
+		VK_CHECK(vkWaitSemaphores(device, &wait_info, UINT64_MAX));
 
 		VkCommandPool command_pool = vk_sync::g_command_pools[frame_index];
 		vkResetCommandPool(device, command_pool, 0);
@@ -169,7 +170,7 @@ namespace Renderer {
 		}
 		else if (result == VK_SUBOPTIMAL_KHR) {
 			vk_swapchain::g_recreate_swapchain = true;
-		}
+		} else VK_CHECK(result);
 
 		// begin recording commands
 		VkCommandBufferBeginInfo buffer_begin_info{
@@ -370,7 +371,10 @@ namespace Renderer {
 			.pResults = nullptr,
 		};
 
-		vkQueuePresentKHR(queue, &present_info);
+        result = vkQueuePresentKHR(queue, &present_info);
+        if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
+            vk_swapchain::g_recreate_swapchain = true;
+        } else VK_CHECK(result);
 
 		g_frame_count++;
 		g_next_signal_value++;

@@ -6,7 +6,7 @@
 #include <cstdint>
 
 struct GltfLoader {
-    void loadGltf(const std::string& filename, SceneResources& scene_resources);
+    bool loadGltf(const std::string& filename, SceneResources& scene_resources, uint32_t image_capacity, uint32_t sampler_capacity);
     
     private:
     void loadFallbacks(SceneResources& scene_resources);

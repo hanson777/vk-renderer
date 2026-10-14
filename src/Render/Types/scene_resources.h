@@ -49,7 +49,7 @@ struct SceneResources {
 
     public:
     void shutdown();
-    void prepareDescriptors(VkDescriptorSetLayout layout, uint32_t capacity);
+    bool prepareDescriptors(VkDescriptorSetLayout layout, uint32_t image_capacity, uint32_t sampler_capacity);
     void destroyDescriptors();
     VkDescriptorSet getTextureDescriptorSet() const { return m_scene_descriptors.textures; }
 

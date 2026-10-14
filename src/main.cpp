@@ -7,7 +7,11 @@
 #include "Application/Application.h"
 #include <iostream>
 
-int main() {
+int main(int argc, char** argv) {
+    if (argc > 2) {
+        std::cerr << "Usage: vk-renderer [scene.glb]\n";
+        return -1;
+    }
     std::cout << "We are all alone on life's journey, held captive by the limitations of human conciousness.\n";
     
     if (!Window::Init(800, 600, "hi")) {
@@ -24,11 +28,17 @@ int main() {
         return -1;
     }
 
-    Renderer::PrepareSceneResources();
+    if (!Renderer::PrepareSceneResources(argc > 1 ? argv[1] : "res/Bistro.glb")) {
+        Renderer::Shutdown();
+        vk_context::Shutdown();
+        Window::Shutdown();
+        return -1;
+    }
 
     FpsCamera camera(glm::vec3(0.0f, 0.0f, 30.0f));
     double last_frame = glfwGetTime();
 
+    uint32_t frames = 0;
     while (!Window::ShouldClose()) {
         Window::BeginFrame();
         double current_frame = glfwGetTime();
@@ -38,11 +48,13 @@ int main() {
         camera.update(delta_time);
         Renderer::Render(camera);
         Input::Update();
+        frames++;
     }
 
     Renderer::Shutdown();
     vk_context::Shutdown();
     Window::Shutdown();
+    std::cout << "[INFO::MAIN] completed " << frames << " frames\n";
 
     return 0;
 }

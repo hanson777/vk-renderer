@@ -11,6 +11,7 @@ struct VertexOutput
     float4 sv_position : SV_Position;
     float2 uv : TEXCOORD0;
     nointerpolation uint texture_index : TEXCOORD1;
+    nointerpolation uint sampler_index : TEXCOORD2;
     nointerpolation float4 base_color : COLOR0;
 };
 
@@ -23,6 +24,7 @@ struct Material
 {
     float4 base_color;
     uint texture_index;
+    uint sampler_index;
 };
 
 struct MaterialBuffer
@@ -53,7 +55,10 @@ struct PushConstants
 ConstantBuffer<PushConstants> pc;
 
 [[vk::binding(0,0)]]
-Sampler2D<float4> textures[];
+Texture2D<float4> textures[];
+
+[[vk::binding(1,0)]]
+SamplerState samplers[];
 
 [shader("vertex")]
 VertexOutput vertMain(uint vertex_id : SV_VulkanVertexID, uint instance_id : SV_VulkanInstanceID)
@@ -67,6 +72,7 @@ VertexOutput vertMain(uint vertex_id : SV_VulkanVertexID, uint instance_id : SV_
 
     output.uv = vert.uv;
     output.texture_index = material.texture_index;
+    output.sampler_index = material.sampler_index;
     output.base_color = material.base_color;
 
     return output;
@@ -75,7 +81,7 @@ VertexOutput vertMain(uint vertex_id : SV_VulkanVertexID, uint instance_id : SV_
 [shader("fragment")]
 float4 fragMain(VertexOutput input) : SV_Target 
 {
-    float4 texel = textures[NonUniformResourceIndex(input.texture_index)].Sample(input.uv);
+    float4 texel = textures[NonUniformResourceIndex(input.texture_index)].Sample(samplers[NonUniformResourceIndex(input.sampler_index)], input.uv);
 
     return texel * input.base_color;
 }

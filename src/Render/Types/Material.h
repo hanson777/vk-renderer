@@ -5,4 +5,5 @@
 struct Material {
     glm::vec4 base_color = glm::vec4(1.0f);
     uint32_t texture_index = 0;
+    uint32_t sampler_index = 0;
 };

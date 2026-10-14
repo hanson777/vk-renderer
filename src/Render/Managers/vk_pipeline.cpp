@@ -8,6 +8,7 @@
 #include <vector>
 #include <algorithm>
 #include <cstdint>
+#include <iostream>
 #include <glm/glm.hpp>
 
 namespace vk_pipeline {
@@ -16,6 +17,7 @@ namespace vk_pipeline {
 	VkPipeline g_pipeline = VK_NULL_HANDLE;
     VkDescriptorSetLayout g_texture_set_layout = VK_NULL_HANDLE;
     uint32_t g_texture_capacity = 0;
+    uint32_t g_sampler_capacity = 0;
 
 	std::vector<Shader> g_shaders;
 	std::vector<VkPipelineShaderStageCreateInfo> g_shader_stage_create_infos;
@@ -27,18 +29,44 @@ namespace vk_pipeline {
 			.size = sizeof(PushConstants),
 		};
 
-        VkPhysicalDeviceProperties properties{};
-        vkGetPhysicalDeviceProperties(vk_device::GetPhysicalDevice(), &properties);
-        const auto& limits = properties.limits;
-        g_texture_capacity = std::min({
-            256u,
-            limits.maxPerStageDescriptorSamplers,
-            limits.maxPerStageDescriptorSampledImages,
-            limits.maxDescriptorSetSamplers,
-            limits.maxDescriptorSetSampledImages,
-            limits.maxPerStageResources,
+        VkPhysicalDeviceDescriptorIndexingProperties indexing_properties{
+            .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_PROPERTIES,
+        };
+        VkPhysicalDeviceProperties2 properties{
+            .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2,
+            .pNext = &indexing_properties,
+        };
+        vkGetPhysicalDeviceProperties2(vk_device::GetPhysicalDevice(), &properties);
+
+        if (indexing_properties.maxUpdateAfterBindDescriptorsInAllPools < 2 ||
+            indexing_properties.maxPerStageUpdateAfterBindResources < 2) {
+            std::cerr << "[ERROR::VK_PIPELINE] insufficient update-after-bind pool or resource capacity\n";
+            return false;
+        }
+
+        g_sampler_capacity = std::min({
+            16u,
+            indexing_properties.maxPerStageDescriptorUpdateAfterBindSamplers,
+            indexing_properties.maxDescriptorSetUpdateAfterBindSamplers,
+            properties.properties.limits.maxSamplerAllocationCount,
+            indexing_properties.maxUpdateAfterBindDescriptorsInAllPools - 1,
         });
-        g_texture_set_layout = createTextureSetLayout(g_texture_capacity);
+
+        g_texture_capacity = std::min({
+            1024u,
+            indexing_properties.maxPerStageDescriptorUpdateAfterBindSampledImages,
+            indexing_properties.maxDescriptorSetUpdateAfterBindSampledImages,
+            indexing_properties.maxPerStageUpdateAfterBindResources - 1,
+            indexing_properties.maxUpdateAfterBindDescriptorsInAllPools - g_sampler_capacity,
+        });
+
+        if (g_texture_capacity == 0 || g_sampler_capacity == 0) {
+            std::cerr << "[ERROR::VK_PIPELINE] update-after-bind image and sampler capacities must be nonzero\n";
+            return false;
+        }
+
+        g_texture_set_layout = createTextureSetLayout(g_texture_capacity, g_sampler_capacity);
+        if (g_texture_set_layout == VK_NULL_HANDLE) return false;
 
 		VkPipelineLayoutCreateInfo pipeline_layout_create_info{
 			.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,

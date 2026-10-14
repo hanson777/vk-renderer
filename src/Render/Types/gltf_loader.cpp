@@ -14,10 +14,10 @@
 #include <unordered_map>
 #include <tuple>
 
-void GltfLoader::loadGltf(const std::string& filename, SceneResources& scene_resources) {
+bool GltfLoader::loadGltf(const std::string& filename, SceneResources& scene_resources, uint32_t image_capacity, uint32_t sampler_capacity) {
     tg3_parse_options opts;
     tg3_error_stack errors;
-    tg3_model model;
+    tg3_model model{};
 
     tg3_parse_options_init(&opts);
     tg3_error_stack_init(&errors);
@@ -28,6 +28,21 @@ void GltfLoader::loadGltf(const std::string& filename, SceneResources& scene_res
             std::cerr << "[ERROR::loadModels] " << "Severity: " << errors.entries[i].severity << ' ' <<
                     "Message: " << (errors.entries[i].message ? errors.entries[i].message : "(null)") << '\n';
         }
+        tg3_model_free(&model);
+        tg3_error_stack_free(&errors);
+        return false;
+    }
+
+    // Reject oversized tables before decoding or uploading images. Each glTF texture
+    // keeps its own image slot, even when several textures reference the same image.
+    size_t image_count = scene_resources.getTextures().size() + model.textures_count +
+                         (scene_resources.getFallbackTextureId() == UINT32_MAX ? 1 : 0);
+    size_t sampler_count = scene_resources.getSamplers().size() + model.samplers_count +
+                           (scene_resources.getFallbackSamplerId() == UINT32_MAX ? 1 : 0);
+    if (!checkDescriptorCounts(image_count, sampler_count, image_capacity, sampler_capacity)) {
+        tg3_model_free(&model);
+        tg3_error_stack_free(&errors);
+        return false;
     }
 
     loadFallbacks(scene_resources);
@@ -61,6 +76,7 @@ void GltfLoader::loadGltf(const std::string& filename, SceneResources& scene_res
 
     tg3_model_free(&model);
     tg3_error_stack_free(&errors);
+    return true;
 }
 
 void GltfLoader::loadFallbacks(SceneResources& scene_resources) {
@@ -106,7 +122,7 @@ void GltfLoader::loadFallbacks(SceneResources& scene_resources) {
 
     if (fallback_material_id == UINT32_MAX) {
         fallback_material_id = static_cast<uint32_t>(materials.size());
-        materials.push_back({.base_color = glm::vec4(1.0f), .texture_index = fallback_texture_id});
+        materials.push_back({.base_color = glm::vec4(1.0f), .texture_index = fallback_texture_id, .sampler_index = fallback_sampler_id});
         scene_resources.setFallbackMaterialId(fallback_material_id);
     }
 }
@@ -340,15 +356,21 @@ std::vector<uint32_t> GltfLoader::loadMaterials(const tg3_model& model, const st
     for (int i = 0; i < model.materials_count; i++) {
         const tg3_material* tg3mat = &model.materials[i];
         uint32_t material_id = static_cast<uint32_t>(materials.size());
+
+        int32_t tg3_tex_id = tg3mat->pbr_metallic_roughness.base_color_texture.index;
+
+        uint32_t texture_id = tg3_tex_id != -1 ? texture_ids[tg3_tex_id] : scene_resources.getFallbackTextureId();
+        const Texture& texture = scene_resources.getTextures()[texture_id];
+
         materials.push_back({
                     .base_color = glm::vec4(tg3mat->pbr_metallic_roughness.base_color_factor[0],
                                             tg3mat->pbr_metallic_roughness.base_color_factor[1],
                                             tg3mat->pbr_metallic_roughness.base_color_factor[2],
                                             tg3mat->pbr_metallic_roughness.base_color_factor[3]),
-                    .texture_index = tg3mat->pbr_metallic_roughness.base_color_texture.index != -1
-                                         ? texture_ids[tg3mat->pbr_metallic_roughness.base_color_texture.index]
-                                         : scene_resources.getFallbackTextureId(),
+                    .texture_index = texture_id,
+                    .sampler_index = texture.sampler_id,
                 });
+
         material_ids[i] = material_id;
     }
 

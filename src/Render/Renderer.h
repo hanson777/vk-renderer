@@ -9,6 +9,6 @@ namespace Renderer {
 
 	void Render(const FpsCamera& camera);
     void Shutdown();
-    void PrepareSceneResources();
+    bool PrepareSceneResources(const std::string& filename);
 	void LoadShader(const std::string& filepath, const std::string& entry_point, const ShaderStage stage);
 }

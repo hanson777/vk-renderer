@@ -5,7 +5,7 @@
 namespace Application {
 
 	void Init() {
-		Renderer::LoadShader("src/Shaders/cube.slang", "vertMain", ShaderStage::vertex);
-		Renderer::LoadShader("src/Shaders/cube.slang", "fragMain", ShaderStage::fragment);
+		Renderer::LoadShader("src/Shaders/phong.slang", "vertMain", ShaderStage::vertex);
+		Renderer::LoadShader("src/Shaders/phong.slang", "fragMain", ShaderStage::fragment);
 	}
 }
