@@ -4,6 +4,7 @@
 #include <tiny_gltf_v3.h>
 #include <vector>
 #include <cstdint>
+#include <string>
 
 struct GltfLoader {
     bool loadGltf(const std::string& filename, SceneResources& scene_resources, uint32_t image_capacity, uint32_t sampler_capacity);

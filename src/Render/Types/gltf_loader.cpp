@@ -1,8 +1,10 @@
 #include "gltf_loader.h"
+#include "Render/Types/Tree.h"
 #include "Render/Types/Vertex.h"
 #include "Render/Types/vk_image.h"
 #include "Render/Types/Texture.h"
 #include "Render/Types/Material.h"
+#include "Render/Types/vk_descriptors.h"
 #include "Render/Managers/vk_device.h"
 #include "Render/Managers/vk_memory.h"
 #include <tiny_gltf_v3.h>
@@ -13,6 +15,7 @@
 #include <iostream>
 #include <unordered_map>
 #include <tuple>
+#include <string>
 #include <filesystem>
 
 bool GltfLoader::loadGltf(const std::string& filename, SceneResources& scene_resources, uint32_t image_capacity, uint32_t sampler_capacity) {
@@ -34,8 +37,6 @@ bool GltfLoader::loadGltf(const std::string& filename, SceneResources& scene_res
         return false;
     }
 
-    // Reject oversized tables before decoding or uploading images. Each glTF texture
-    // keeps its own image slot, even when several textures reference the same image.
     size_t image_count = scene_resources.getTextures().size() + model.textures_count +
                          (scene_resources.getFallbackTextureId() == UINT32_MAX ? 1 : 0);
     size_t sampler_count = scene_resources.getSamplers().size() + model.samplers_count +

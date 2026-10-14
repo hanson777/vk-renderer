@@ -17,7 +17,7 @@ enum class ShaderStage {
 struct Shader {
 	Shader() = default;
 	Shader(const std::string& filename, const std::string& entry_point_name, const ShaderStage stage);
-	void LoadModule(const std::string& filename, const std::string& entry_point_name);
+	bool LoadModule(const std::string& filename, const std::string& entry_point_name);
 
 	std::string m_entry_point;
 	const char* m_spirv_entry_point = "main";

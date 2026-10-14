@@ -12,7 +12,7 @@ int main(int argc, char** argv) {
         std::cerr << "Usage: vk-renderer [scene.glb]\n";
         return -1;
     }
-    std::cout << "We are all alone on life's journey, held captive by the limitations of human conciousness.\n";
+    std::cout << "We are all alone on life's journey, held captive by the limitations of human consciousness.\n";
     
     if (!Window::Init(800, 600, "hi")) {
         return -1;
