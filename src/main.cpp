@@ -39,6 +39,7 @@ int main(int argc, char** argv) {
     double last_frame = glfwGetTime();
 
     uint32_t frames = 0;
+    double elapsed_time = glfwGetTime();
     while (!Window::ShouldClose()) {
         Window::BeginFrame();
         double current_frame = glfwGetTime();
@@ -50,11 +51,13 @@ int main(int argc, char** argv) {
         Input::Update();
         frames++;
     }
+    elapsed_time += glfwGetTime();
 
     Renderer::Shutdown();
     vk_context::Shutdown();
     Window::Shutdown();
     std::cout << "[INFO::MAIN] completed " << frames << " frames\n";
+    std::cout << "[INFO::MAIN] average fps: " << frames / elapsed_time << '\n';
 
     return 0;
 }

@@ -13,6 +13,7 @@
 #include <iostream>
 #include <unordered_map>
 #include <tuple>
+#include <filesystem>
 
 bool GltfLoader::loadGltf(const std::string& filename, SceneResources& scene_resources, uint32_t image_capacity, uint32_t sampler_capacity) {
     tg3_parse_options opts;
@@ -47,7 +48,7 @@ bool GltfLoader::loadGltf(const std::string& filename, SceneResources& scene_res
 
     loadFallbacks(scene_resources);
 
-    std::vector<ImageData> image_data = loadImageData(model, scene_resources);
+    std::vector<ImageData> image_data = loadImageData(model, filename, scene_resources);
     std::vector<uint32_t> image_ids = uploadImageData(model, image_data, scene_resources);
 
     std::vector<uint32_t> sampler_ids = loadSamplers(model, scene_resources);
@@ -127,9 +128,10 @@ void GltfLoader::loadFallbacks(SceneResources& scene_resources) {
     }
 }
 
-std::vector<ImageData> GltfLoader::loadImageData(const tg3_model& model, SceneResources& scene_resources) {
+std::vector<ImageData> GltfLoader::loadImageData(const tg3_model& model, const std::string& filename, SceneResources& scene_resources) {
     std::vector<ImageData> image_datas(model.images_count);
     std::vector<uint8_t>& image_buffer = scene_resources.getImageBuffer();
+    const std::filesystem::path base_directory = std::filesystem::path(filename).parent_path();
     
     for (int i = 0; i < model.images_count; i++) {
         const tg3_image& image = model.images[i];
@@ -138,8 +140,14 @@ std::vector<ImageData> GltfLoader::loadImageData(const tg3_model& model, SceneRe
         if (image.buffer_view >= 0) {
             data = decodeEmbeddedImage(model, image, width, height);
         } else if (image.uri.data != nullptr && image.uri.len > 0) {
-            std::string image_path(image.uri.data, image.uri.len);
+            // External image URIs are relative to the glTF file, not the working directory.
+            const std::string image_path = (base_directory / std::string(image.uri.data, image.uri.len)).string();
             data = stbi_load(image_path.c_str(), &width, &height, &channels, 4);
+            if (data == nullptr) {
+                const char* reason = stbi_failure_reason();
+                std::cerr << "[ERROR::loadImageData] could not load \"" << image_path << "\": "
+                          << (reason ? reason : "unknown image error") << '\n';
+            }
         }
         if (data == nullptr) {
             std::cerr << "[ERROR::loadImageData] failed to load image " << i << ", using white pixel\n";
